@@ -134,6 +134,18 @@ t=p.with_suffix('.tmp');t.write_text(json.dumps({{'source_sha':'{sha}','reposito
                 check=False,
             )
         raise
+    subprocess.run(
+        [
+            "scp",
+            str(root / "ops/install_route.py"),
+            "root@188.34.188.200:/root/agora-install-route.py",
+        ],
+        check=True,
+    )
+    subprocess.run(
+        ["ssh", "root@188.34.188.200", "python3 /root/agora-install-route.py"],
+        check=True,
+    )
     print(json.dumps(inspect()))
 
 
