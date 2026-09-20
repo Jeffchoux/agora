@@ -1,8 +1,10 @@
+import hmac
 import json
 import os
 import time
 import uuid
 from collections import defaultdict, deque
+from pathlib import Path
 
 from a2a.auth.user import User
 from a2a.server.agent_execution import AgentExecutor
@@ -79,7 +81,13 @@ class Guard:
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
         path = scope["path"]
-        public = path in {"/health", "/.well-known/agent-card.json"}
+        public = path in {
+            "/",
+            "/ui.css",
+            "/ui.js",
+            "/health",
+            "/.well-known/agent-card.json",
+        }
 
         async def reject(code, text):
             await JSONResponse({"error": text}, status_code=code)(scope, receive, send)
@@ -89,10 +97,22 @@ class Guard:
             token = headers.get(b"authorization", b"").decode("latin1")
             if not token.startswith("Bearer "):
                 return await reject(401, "credential required")
-            try:
-                identity = self.store.authenticate(token[7:])
-            except Denied:
-                return await reject(401, "invalid credential")
+            if path == "/v1/console" or path.startswith("/v1/console/"):
+                secret_file = os.environ.get("AGORA_ADMIN_TOKEN_FILE", "")
+                try:
+                    expected = (
+                        Path(secret_file).read_text().strip() if secret_file else ""
+                    )
+                except OSError:
+                    expected = ""
+                if not expected or not hmac.compare_digest(token[7:], expected):
+                    return await reject(401, "invalid operator credential")
+                identity = {"project": "operator", "agent": "console"}
+            else:
+                try:
+                    identity = self.store.authenticate(token[7:])
+                except Denied:
+                    return await reject(401, "invalid credential")
             scope["agora_identity"] = identity
             key = (identity["project"], identity["agent"])
             times = self.rates[key]
@@ -183,6 +203,9 @@ def create_app(path=None, url=None):
         except (ValueError, TypeError) as exc:
             return JSONResponse({"error": str(exc)}, status_code=400)
 
+    from agora.console import install
+
+    install(app, store)
     handler = DefaultRequestHandlerV2(Coordinator(store), InMemoryTaskStore(), card)
     add_a2a_routes_to_fastapi(
         app,

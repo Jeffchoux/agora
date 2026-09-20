@@ -80,6 +80,43 @@ def generate_cli(config, prompt, schema):
                 raise ValueError("Claude rejected request (login or quota)")
             structured = result.get("structured_output")
             return json.dumps(structured) if structured else result.get("result", "")
+        if config["provider"] == "grok-cli":
+            env = {
+                k: v for k, v in env.items() if k not in {"XAI_API_KEY", "GROK_API_KEY"}
+            }
+            argv = [
+                "grok",
+                "--verbatim",
+                "--system-prompt-override",
+                "You are a text-only project collaborator. Return only the requested JSON. No tools or external actions.",
+                "--tools",
+                "",
+                "--no-subagents",
+                "--no-memory",
+                "--disable-web-search",
+                "--permission-mode",
+                "plan",
+                "--max-turns",
+                "1",
+                "--cwd",
+                directory,
+                "--json-schema",
+                json.dumps(schema),
+                "--prompt-file",
+                str(Path(directory) / "prompt.txt"),
+            ]
+            Path(directory, "prompt.txt").write_text(prompt)
+            result = json.loads(execute(argv, "", directory, env))
+            if "kind" in result and "body" in result:
+                return json.dumps(result)
+            structured = result.get("structuredOutput") or result.get(
+                "structured_output"
+            )
+            return (
+                json.dumps(structured)
+                if structured
+                else result.get("text", result.get("result", ""))
+            )
         if config["provider"] != "codex-cli":
             raise ValueError("unsupported CLI")
         status = execute(["codex", "login", "status"], "", directory, env, 20)

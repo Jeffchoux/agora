@@ -94,6 +94,30 @@ $HOME/.local/bin/uv run --no-sync pytest -q --disable-warnings
         ],
         check=True,
     )
+    subprocess.run(
+        [
+            "scp",
+            str(root / "ops/agora-runner.service"),
+            "root@188.34.188.200:/etc/systemd/system/agora-runner.service",
+        ],
+        check=True,
+    )
+    prior_runner_active = (
+        command(
+            [
+                "ssh",
+                "root@188.34.188.200",
+                "systemctl is-active agora-runner.service || true",
+            ]
+        )
+        == "active"
+    )
+    # Stop runner before switching release; running calls are charged and marked
+    # interrupted on restart, never replayed automatically.
+    subprocess.run(
+        ["ssh", "root@188.34.188.200", "systemctl stop agora-runner.service || true"],
+        check=True,
+    )
     prior = command(["ssh", HOST, "readlink " + ROOT + "/current || true"])
     try:
         subprocess.run(
@@ -103,7 +127,15 @@ $HOME/.local/bin/uv run --no-sync pytest -q --disable-warnings
             [
                 "ssh",
                 "root@188.34.188.200",
-                "systemctl daemon-reload && systemctl enable --now agora.service && systemctl restart agora.service",
+                "systemctl daemon-reload && systemctl enable --now agora.service && systemctl restart agora.service && systemctl enable --now agora-runner.service",
+            ],
+            check=True,
+        )
+        subprocess.run(
+            [
+                "ssh",
+                "root@188.34.188.200",
+                "systemctl is-active --quiet agora-runner.service",
             ],
             check=True,
         )
@@ -120,6 +152,10 @@ t=p.with_suffix('.tmp');t.write_text(json.dumps({{'source_sha':'{sha}','reposito
 """
         subprocess.run(["ssh", HOST, "python3 -"], input=script, text=True, check=True)
     except Exception:
+        subprocess.run(
+            ["ssh", "root@188.34.188.200", "systemctl stop agora-runner.service"],
+            check=False,
+        )
         if prior:
             subprocess.run(
                 ["ssh", HOST, "ln -sfn " + prior + " " + ROOT + "/current"], check=True
@@ -131,6 +167,11 @@ t=p.with_suffix('.tmp');t.write_text(json.dumps({{'source_sha':'{sha}','reposito
         else:
             subprocess.run(
                 ["ssh", "root@188.34.188.200", "systemctl stop agora.service"],
+                check=False,
+            )
+        if prior_runner_active:
+            subprocess.run(
+                ["ssh", "root@188.34.188.200", "systemctl start agora-runner.service"],
                 check=False,
             )
         raise

@@ -10,6 +10,7 @@ WorkingDirectory=/home/galaxia/agora/current
 ExecStart=/home/galaxia/agora/current/ops/start.sh
 Environment=AGORA_DB=/home/galaxia/.local/share/agora/agora.sqlite
 Environment=AGORA_URL=https://app.galaxia-os.com/agora
+Environment=AGORA_ADMIN_TOKEN_FILE=/home/galaxia/.local/share/agora/operator.key
 UMask=0077
 Restart=on-failure
 RestartSec=5
