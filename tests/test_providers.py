@@ -105,3 +105,30 @@ def test_claude_api_login_cannot_spend(monkeypatch):
             {},
         )
     assert len(calls) == 1
+
+
+def test_credentials_file_is_private_and_selective(tmp_path, monkeypatch):
+    from agora.worker import provider_key
+
+    p = tmp_path / "keys.json"
+    p.write_text('{"MISTRAL_API_KEY":"selected","UNRELATED_SECRET":"other"}')
+    p.chmod(0o600)
+    monkeypatch.setenv("MISTRAL_API_KEY", "wrong")
+    assert (
+        provider_key({"credential_file": str(p), "key_env": "MISTRAL_API_KEY"})
+        == "selected"
+    )
+    p.chmod(0o644)
+    with pytest.raises(ValueError, match="private"):
+        provider_key({"credential_file": str(p), "key_env": "MISTRAL_API_KEY"})
+
+
+def test_missing_selected_key_has_no_environment_fallback(tmp_path, monkeypatch):
+    from agora.worker import provider_key
+
+    p = tmp_path / "keys.json"
+    p.write_text("{}")
+    p.chmod(0o600)
+    monkeypatch.setenv("MISTRAL_API_KEY", "must-not-fallback")
+    with pytest.raises(ValueError, match="missing"):
+        provider_key({"credential_file": str(p), "key_env": "MISTRAL_API_KEY"})
