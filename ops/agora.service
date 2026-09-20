@@ -1,0 +1,26 @@
+[Unit]
+Description=Agora project collaboration gateway
+After=network.target
+
+[Service]
+Type=simple
+User=galaxia
+Group=galaxia
+WorkingDirectory=/home/galaxia/agora/current
+ExecStart=/home/galaxia/agora/current/ops/start.sh
+Environment=AGORA_DB=/home/galaxia/.local/share/agora/agora.sqlite
+Environment=AGORA_URL=http://127.0.0.1:8768
+UMask=0077
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/galaxia/.local/share/agora
+MemoryMax=384M
+CPUQuota=50%
+TasksMax=48
+
+[Install]
+WantedBy=multi-user.target
