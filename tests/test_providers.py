@@ -132,3 +132,31 @@ def test_missing_selected_key_has_no_environment_fallback(tmp_path, monkeypatch)
     monkeypatch.setenv("MISTRAL_API_KEY", "must-not-fallback")
     with pytest.raises(ValueError, match="missing"):
         provider_key({"credential_file": str(p), "key_env": "MISTRAL_API_KEY"})
+
+
+def test_grok_structured_output_and_no_tools(monkeypatch):
+    from agora.cli_provider import generate_cli
+
+    def fake(argv, prompt, cwd, env):
+        assert argv[argv.index("--tools") + 1] == ""
+        assert "--no-subagents" in argv and "--disable-web-search" in argv
+        assert "--system-prompt-override" in argv
+        assert "XAI_API_KEY" not in env
+        return '{"structuredOutput":{"kind":"answer","body":"ok"}}'
+
+    monkeypatch.setenv("XAI_API_KEY", "must-not-be-used")
+    monkeypatch.setattr("agora.cli_provider.execute", fake)
+    assert (
+        json.loads(
+            generate_cli(
+                {
+                    "provider": "grok-cli",
+                    "model": "default",
+                    "operator_authorized": True,
+                },
+                "hello",
+                {},
+            )
+        )["body"]
+        == "ok"
+    )

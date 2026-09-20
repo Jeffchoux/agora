@@ -36,7 +36,7 @@ def provider_key(config, default_env="AGORA_MODEL_KEY"):
 
 
 def generate(config, prompt):
-    if config["provider"] in {"codex-cli", "claude-cli"}:
+    if config["provider"] in {"codex-cli", "claude-cli", "grok-cli"}:
         return Contribution.model_validate_json(
             generate_cli(config, prompt, Contribution.model_json_schema())
         )

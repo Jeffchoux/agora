@@ -1,0 +1,29 @@
+'use strict';
+const $=id=>document.getElementById(id);
+let token=sessionStorage.getItem('agora-operator')||'', selected=null, busy=false;
+const labels={draft:'Prête à lancer',queued:'En attente',running:'En cours',finished:'Cycle terminé',stopped:'Arrêtée',failed:'À vérifier',done:'Contribution reçue'};
+function el(tag,text,cls){const n=document.createElement(tag); if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;}
+function notice(text,error=false){$('notice').textContent=text;$('notice').className=error?'error':'';}
+async function api(path='',body){const r=await fetch('v1/console'+path,{method:body?'POST':'GET',headers:{Authorization:'Bearer '+token,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined});const d=await r.json();if(!r.ok){if(r.status===401)logout();throw Error(d.error||'Connexion indisponible');}return d;}
+function logout(){token='';sessionStorage.removeItem('agora-operator');$('workspace').hidden=true;$('login').hidden=false;$('logout').hidden=true;selected=null;}
+async function refresh(){const data=await api();$('login').hidden=true;$('workspace').hidden=false;$('logout').hidden=false;
+ if(!$('agents').children.length){for(const a of data.agents){const l=el('label',undefined,'agent');const c=document.createElement('input');c.type='checkbox';c.value=a.id;c.name='agent';c.checked=['codex','qwen-coder'].includes(a.id);const t=el('span',a.label);t.append(el('small',a.type));l.append(c,t);$('agents').append(l);}}
+ $('mission-list').replaceChildren();if(!data.missions.length)$('mission-list').append(el('p','Votre premier projet commence ici. Préparez un brief, puis lancez votre équipe.','empty'));
+ for(const m of data.missions){const b=el('button',undefined,'mission-card');b.append(el('span',labels[m.status]||m.status,'pill'),el('strong',m.title),el('small',`${m.calls} / ${m.max_calls} appels · ${m.seconds/60} min maximum`));b.onclick=()=>show(m.id,true);$('mission-list').append(b);}
+ if(selected)await show(selected,false);
+}
+async function show(id,focus){selected=id;const m=await api('/'+encodeURIComponent(id));const box=$('detail');box.hidden=false;box.replaceChildren();const head=el('div',undefined,'detail-head'),title=el('div');title.append(el('p',labels[m.status]||m.status,'eyebrow'),el('h2',m.title));const actions=el('div',undefined,'actions');
+ for(const [action,text] of [['start','Lancer la mission'],['stop','Arrêter les prochains appels']]){if(action==='start'&&m.status!=='draft'||action==='stop'&&!['queued','running'].includes(m.status))continue;const b=el('button',text,action==='start'?'primary':'quiet');b.onclick=async()=>{b.disabled=true;try{await api('/'+id+'/'+action,{});await refresh();notice(action==='start'?'Mission lancée. Les contributions apparaîtront ici.':'Arrêt enregistré. L’appel déjà engagé peut terminer.');}catch(e){notice(e.message,true);b.disabled=false;}};actions.append(b);}
+ const download=el('button','Exporter les contributions','quiet');download.onclick=()=>{const blob=new Blob([JSON.stringify(m,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=el('a');a.href=url;a.download='agora-'+m.id+'.json';a.click();URL.revokeObjectURL(url);};actions.append(download);head.append(title,actions);box.append(head);
+ const metrics=el('div',undefined,'metrics');for(const t of [`${m.calls} / ${m.max_calls} appels`,`${m.seconds/60} min maximum`,'0 $ d’API payante'])metrics.append(el('span',t));box.append(metrics,el('p',m.brief,'brief'));
+ if(m.error)box.append(el('p',m.error,'hint'));if(!m.turns.length)box.append(el('p',m.status==='draft'?'L’équipe attend votre lancement. Chaque agent pourra lire les dernières contributions.':m.status==='queued'?'Mission en attente de son tour dans l’atelier.':'Aucune contribution reçue.','empty'));
+ for(const t of m.turns){const card=el('article',undefined,'turn'),h=el('div',undefined,'turn-heading');h.append(el('strong',`${t.ordinal.toString().padStart(2,'0')} · ${t.agent}`),el('span',labels[t.status]||t.status,'pill'));card.append(h,el('p',t.body||'L’agent prépare sa contribution…'));box.append(card);}
+ box.append(el('p','Un cycle terminé n’est pas une validation du livrable. Vérifiez les propositions avant de les appliquer.','hint'));
+ if(focus){box.scrollIntoView({behavior:'auto',block:'start'});box.tabIndex=-1;box.focus({preventScroll:true});}
+}
+$('logout').onclick=logout;
+$('keyfile').onchange=async e=>{const f=e.target.files[0];if(!f)return;if(f.size>1024){notice('Fichier de clé invalide.',true);return;}token=(await f.text()).trim();try{await refresh();sessionStorage.setItem('agora-operator',token);notice('Atelier ouvert.');}catch(err){notice(err.message,true);}e.target.value='';};
+$('login-form').onsubmit=async e=>{e.preventDefault();token=$('token').value.trim();try{await refresh();sessionStorage.setItem('agora-operator',token);$('token').value='';notice('Atelier ouvert.');}catch(err){notice(err.message,true);}};
+$('mission-form').onsubmit=async e=>{e.preventDefault();if(busy)return;const agents=Array.from(document.querySelectorAll('[name=agent]:checked')).map(x=>x.value);if(!agents.length||agents.length>4){notice('Choisissez entre un et quatre agents.',true);return;}busy=true;$('create').disabled=true;try{const d=await api('',{title:$('title').value,brief:$('brief').value,agents,max_calls:Number($('calls').value),seconds:Number($('duration').value),request_key:crypto.randomUUID()});await refresh();await show(d.id,true);notice('Mission préparée. Vérifiez ses limites puis lancez-la.');}catch(err){notice(err.message,true);}finally{busy=false;$('create').disabled=false;}};
+if(token)refresh().catch(e=>notice(e.message,true));
+setInterval(()=>{if(token&&!document.hidden&&!busy&&!['BUTTON','INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))refresh().catch(e=>notice(e.message,true));},10000);

@@ -1,0 +1,28 @@
+[Unit]
+Description=Agora explicit mission dispatcher (idle without queued mission)
+After=network.target agora.service
+
+[Service]
+Type=simple
+User=galaxia
+Group=galaxia
+WorkingDirectory=/home/galaxia/agora/current
+ExecStart=/home/galaxia/agora/current/.venv/bin/python -m agora.mission_runner
+Environment=AGORA_DB=/home/galaxia/.local/share/agora/agora.sqlite
+Environment=PATH=/home/galaxia/.local/bin:/usr/local/bin:/usr/bin:/bin
+UMask=0077
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/galaxia/.local/share/agora /home/galaxia/.codex /home/galaxia/.grok
+MemoryMax=1536M
+CPUQuota=100%
+TasksMax=128
+KillMode=control-group
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target
