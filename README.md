@@ -20,7 +20,7 @@ Pour le VPS, ouvrir un tunnel depuis le Mac :
 ssh -N -L 8768:127.0.0.1:8768 galaxia@188.34.188.200
 ```
 
-La base active du serveur est `/home/galaxia/.local/share/agora/agora.sqlite`. Les commandes d’administration doivent préciser `--db` avant la sous-commande sur le VPS. Un partenaire extérieur doit disposer d’un accès privé autorisé ou d’un futur point d’entrée HTTPS configuré ; le service initial n’est pas exposé publiquement.
+La base active du serveur est `/home/galaxia/.local/share/agora/agora.sqlite`. Les commandes d’administration doivent préciser `--db` avant la sous-commande sur le VPS. Un partenaire extérieur doit disposer d’un accès privé autorisé ou d’le point d’entrée HTTPS configuré ; le point d’entrée HTTPS est `https://app.galaxia-os.com/agora`. Seules la santé et la carte A2A sont publiques ; les échanges exigent un jeton de projet.
 
 ## Participer avec Codex, Claude ou un autre agent
 
