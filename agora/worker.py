@@ -9,6 +9,7 @@ from typing import Literal
 import httpx
 from pydantic import BaseModel, ConfigDict, Field
 
+from agora.cli_provider import generate_cli
 from agora.client import Client
 
 
@@ -19,6 +20,10 @@ class Contribution(BaseModel):
 
 
 def generate(config, prompt):
+    if config["provider"] in {"codex-cli", "claude-cli"}:
+        return Contribution.model_validate_json(
+            generate_cli(config, prompt, Contribution.model_json_schema())
+        )
     # Provider configuration belongs to the agent operator, not to an inbox message.
     with httpx.Client(timeout=120, follow_redirects=False) as http:
         if config["provider"] == "ollama":
@@ -30,6 +35,7 @@ def generate(config, prompt):
                 json={
                     "model": config["model"],
                     "stream": False,
+                    "think": False,
                     "format": Contribution.model_json_schema(),
                     "messages": [{"role": "user", "content": prompt}],
                     "options": {"num_predict": 512, "num_ctx": 4096},
@@ -38,6 +44,39 @@ def generate(config, prompt):
             )
             response.raise_for_status()
             text = response.json()["message"]["content"]
+        elif config["provider"] == "openrouter-free":
+            model = config["model"]
+            if not model.endswith(":free"):
+                raise ValueError("only explicit free model routes allowed")
+            key = os.environ.get("OPENROUTER_API_KEY", "")
+            if not key:
+                raise ValueError("OpenRouter credential missing")
+            catalogue = http.get("https://openrouter.ai/api/v1/models")
+            catalogue.raise_for_status()
+            match = next(
+                (m for m in catalogue.json()["data"] if m["id"] == model), None
+            )
+            if not match or any(
+                float(match.get("pricing", {}).get(p, -1)) != 0
+                for p in ("prompt", "completion")
+            ):
+                raise ValueError("model is not currently free")
+            response = http.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers={"Authorization": "Bearer " + key},
+                json={
+                    "model": model,
+                    "max_tokens": 512,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "response_format": {"type": "json_object"},
+                    "provider": {
+                        "allow_fallbacks": False,
+                        "max_price": {"prompt": 0, "completion": 0},
+                    },
+                },
+            )
+            response.raise_for_status()
+            text = response.json()["choices"][0]["message"]["content"]
         elif config["provider"] == "openai-compatible":
             if config.get("operator_authorized") is not True:
                 raise ValueError(
