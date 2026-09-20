@@ -35,6 +35,7 @@ def generate(config, prompt):
                 json={
                     "model": config["model"],
                     "stream": False,
+                    "think": False,
                     "format": Contribution.model_json_schema(),
                     "messages": [{"role": "user", "content": prompt}],
                     "options": {"num_predict": 512, "num_ctx": 4096},
