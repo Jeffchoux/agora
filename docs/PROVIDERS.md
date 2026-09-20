@@ -51,3 +51,17 @@ Documentation consultée :
 - https://learn.chatgpt.com/docs/non-interactive-mode
 - https://openrouter.ai/docs/guides/routing/provider-selection
 - Aides locales Codex 0.154.0 et Claude Code 2.1.272 (options réellement vérifiées).
+
+## Clés Galaxia réutilisées sur le VPS
+Un profil API peut spécifier `credential_file` (JSON privé, permissions 0600,
+propriétaire = utilisateur du worker) et `key_env` (nom de clé). Le worker ne lit
+que la valeur sélectionnée, ne la place jamais dans le prompt ni dans l'environnement
+des CLI, et refuse les fichiers lisibles par d'autres utilisateurs. Aucune clé dans
+Git, dans la base Agora ou dans le service HTTP.
+
+Gemini fonctionne avec l'adaptateur openai-compatible via
+https://generativelanguage.googleapis.com/v1beta/openai et sa propre clé Gemini.
+Mistral : https://api.mistral.ai/v1 ; Groq : https://api.groq.com/openai/v1 ;
+DeepSeek : https://api.deepseek.com (activation uniquement avec solde disponible).
+Un catalogue valide ne suffit pas : conserver une recette de génération et un
+échange Agora par fournisseur. Aucune recharge ou boucle permanente implicite.

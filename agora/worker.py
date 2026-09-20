@@ -19,6 +19,22 @@ class Contribution(BaseModel):
     body: str = Field(min_length=1, max_length=16000)
 
 
+def provider_key(config, default_env="AGORA_MODEL_KEY"):
+    """Read only the selected credential from a private operator-owned file."""
+    name = config.get("key_env", default_env)
+    if config.get("credential_file"):
+        path = Path(config["credential_file"]).expanduser()
+        stat = path.stat()
+        if stat.st_uid != os.getuid() or stat.st_mode & 0o077:
+            raise ValueError("credential file must be private and owned by operator")
+        value = json.loads(path.read_text()).get(name, "")
+    else:
+        value = os.environ.get(name, "")
+    if not isinstance(value, str) or not value:
+        raise ValueError("model credential missing")
+    return value
+
+
 def generate(config, prompt):
     if config["provider"] in {"codex-cli", "claude-cli"}:
         return Contribution.model_validate_json(
@@ -48,7 +64,7 @@ def generate(config, prompt):
             model = config["model"]
             if not model.endswith(":free"):
                 raise ValueError("only explicit free model routes allowed")
-            key = os.environ.get("OPENROUTER_API_KEY", "")
+            key = provider_key(config, "OPENROUTER_API_KEY")
             if not key:
                 raise ValueError("OpenRouter credential missing")
             catalogue = http.get("https://openrouter.ai/api/v1/models")
@@ -85,7 +101,7 @@ def generate(config, prompt):
             endpoint = config["endpoint"].rstrip("/")
             if not endpoint.startswith("https://"):
                 raise ValueError("HTTPS provider endpoint required")
-            key = os.environ.get(config.get("key_env", "AGORA_MODEL_KEY"), "")
+            key = provider_key(config)
             if not key:
                 raise ValueError("model credential missing")
             response = http.post(
