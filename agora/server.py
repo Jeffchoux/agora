@@ -86,6 +86,10 @@ class Guard:
             "/ui.css",
             "/capture.css",
             "/ui.js",
+            "/i18n.js",
+            "/messages.js",
+            "/landing.js",
+            "/landing.css",
             "/health",
             "/.well-known/agent-card.json",
         }

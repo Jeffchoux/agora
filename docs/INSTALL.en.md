@@ -99,8 +99,10 @@ export AGORA_DB="$HOME/.config/agora/agora.sqlite"
 uv run --no-sync uvicorn agora.server:create_app --factory --host 127.0.0.1 --port 8768
 ```
 
-Open **http://127.0.0.1:8768**. Use the file selector under “Ou ouvrir votre
-fichier d’accès” to load your local `operator.key`.
+Open **http://127.0.0.1:8768**. The public introduction lets you explore fictional
+examples without a key. Under **Get Agora**, choose **Already installed? Open
+this workspace**, then use the file selector to load your local `operator.key`.
+This is your installation’s operator key, not a provider API key.
 
 In a second terminal at the same repository root, set the same three environment
 variables, then run:
@@ -115,16 +117,18 @@ call may finish before it exits.
 
 ## 4. Complete your first mission
 
-The current interface is in French:
+The interface starts in English. The header lets you switch to French; your
+choice is saved in this browser. Project text and previous responses are not
+translated. New agent responses follow the language of the mission brief.
 
-1. **Ajouter un projet**: add a project. Give it a name; leave repository and URL
+1. **Add a project**: give it a name; leave repository and URL
    empty for your first description-only project.
-2. Select the project, then use **Parlons du projet** to describe its goal and
-   constraints. **Ajouter à la discussion** saves context without a model call.
-3. **Préparer une réponse des agents** opens the mission form. Select your agent
-   and a small call limit, then choose **Lancer la vérification**.
-4. **Autour de la table** shows the current speaker and question/answer direction.
-   **Tous les échanges** opens the transcript; **Exporter le rapport JSON** saves it.
+2. Select the project, then use **Tell us about your project** to describe its goal and
+   constraints. **Add to discussion** saves context without a model call.
+3. **Prepare an agent response** opens the mission form. Select your agent
+   and a small call limit, then choose **Start review**.
+4. **Around the table** shows the current speaker and question/answer direction.
+   **All exchanges** opens the transcript; **Export JSON report** saves it.
 
 Success means a real contribution appears and the mission finishes within its
 configured limits. A queued mission has not yet received a model response.

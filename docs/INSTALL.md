@@ -66,7 +66,10 @@ export AGORA_DB="$HOME/.config/agora/agora.sqlite"
 uv run --no-sync uvicorn agora.server:create_app --factory --host 127.0.0.1 --port 8768
 ```
 
-Ouvrez `http://127.0.0.1:8768` et chargez `operator.key` avec le bouton de connexion.
+Ouvrez `http://127.0.0.1:8768`. L’accueil est en anglais par défaut ; le sélecteur
+permet de choisir le français. Les exemples sont fictifs et n’appellent aucun modèle.
+Dans la section d’installation, choisissez « Déjà installé ? Ouvrir cette console »
+puis chargez `operator.key` avec le sélecteur de fichier. Il ne s’agit pas d’une clé API.
 Dans un deuxième terminal, définissez les mêmes variables puis :
 
 ```sh

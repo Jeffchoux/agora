@@ -1,4 +1,16 @@
-# Changements
+# Changelog
+
+## International welcome and workspace · 2026-09-21
+
+- English-first interface with a persistent French language choice, including
+  projects, mission controls, agent exchanges and known error messages.
+- Public product walkthrough with three clearly fictional, interactive examples:
+  repository, website and idea. No operator key, model call or private data needed.
+- Setup and private workspace entry are separate from product discovery.
+- Runner instructions ask agents to follow the mission brief’s language.
+- User-written context and past contributions remain in their original language.
+- Signing out clears private rendered content and ignores delayed responses from
+  the previous session. Failed login keeps the retry form accessible.
 
 ## Version publique initiale — 21 septembre 2026
 
