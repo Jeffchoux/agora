@@ -37,7 +37,7 @@ def execute(argv, prompt, cwd, env, timeout=120):
         return output.read().decode()
 
 
-def generate_cli(config, prompt, schema):
+def generate_cli(config, prompt, schema, images=()):
     if config.get("operator_authorized") is not True:
         raise ValueError("subscription usage must be authorized")
     # Remove provider overrides: only the already connected subscription is allowed.
@@ -48,6 +48,8 @@ def generate_cli(config, prompt, schema):
     }
     with tempfile.TemporaryDirectory(prefix="agora-text-") as directory:
         if config["provider"] == "claude-cli":
+            if images:
+                raise ValueError("images unavailable for Claude participant")
             auth = json.loads(
                 execute(
                     ["claude", "--safe-mode", "auth", "status"], "", directory, env, 20
@@ -81,6 +83,8 @@ def generate_cli(config, prompt, schema):
             structured = result.get("structured_output")
             return json.dumps(structured) if structured else result.get("result", "")
         if config["provider"] == "grok-cli":
+            if images:
+                raise ValueError("images unavailable for Grok participant")
             env = {
                 k: v for k, v in env.items() if k not in {"XAI_API_KEY", "GROK_API_KEY"}
             }
@@ -160,6 +164,11 @@ def generate_cli(config, prompt, schema):
             "shell_snapshot",
         ]:
             argv += ["--disable", feature]
+        for path in images:
+            image = Path(path)
+            if not image.is_absolute() or image.suffix != ".png" or not image.is_file():
+                raise ValueError("invalid mission capture")
+            argv += ["--image", str(image)]
         argv += ["--enable", "skip_host_skill_discovery", "-"]
         events = execute(argv, prompt, directory, env)
         for line in events.splitlines():

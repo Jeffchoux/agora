@@ -3,7 +3,9 @@
 import json
 import time
 import uuid
+from pathlib import Path
 
+from agora.inspection import TARGETS, collect
 from agora.store import Denied
 
 PROFILES = {
@@ -36,8 +38,9 @@ PROFILES = {
 
 
 class Missions:
-    def __init__(self, store):
+    def __init__(self, store, collector=collect):
         self.store = store
+        self.collector = collector
         with store.db() as db:
             db.executescript("""
             CREATE TABLE IF NOT EXISTS missions (
@@ -49,9 +52,12 @@ class Missions:
               id TEXT PRIMARY KEY, mission TEXT, agent TEXT, ordinal INTEGER,
               status TEXT, body TEXT DEFAULT '', kind TEXT DEFAULT '', created REAL,
               UNIQUE(mission, ordinal));
+            CREATE TABLE IF NOT EXISTS mission_context (
+              mission TEXT PRIMARY KEY REFERENCES missions(id),
+              target TEXT NOT NULL, evidence TEXT);
             """)
 
-    def create(self, title, brief, agents, max_calls, seconds, request_key):
+    def create(self, title, brief, agents, max_calls, seconds, request_key, target=None):
         if not isinstance(title, str) or not 1 <= len(title.strip()) <= 100:
             raise ValueError("Titre requis, 100 caractères maximum")
         if not isinstance(brief, str) or not 10 <= len(brief) <= 8000:
@@ -69,18 +75,24 @@ class Missions:
             raise ValueError("Durée entre 3 et 30 minutes")
         if not isinstance(request_key, str) or not 1 <= len(request_key) <= 80:
             raise ValueError("Identifiant de création requis")
+        if target is not None and target not in TARGETS:
+            raise ValueError("Projet non connecté")
         with self.store.db() as db:
             old = db.execute(
                 "SELECT * FROM missions WHERE request_key=?", (request_key,)
             ).fetchone()
             if old:
+                old_context = db.execute(
+                    "SELECT target FROM mission_context WHERE mission=?", (old["id"],)
+                ).fetchone()
                 if (
                     old["title"],
                     old["brief"],
                     old["agents"],
                     old["max_calls"],
                     old["seconds"],
-                ) != (title.strip(), brief, json.dumps(agents), max_calls, seconds):
+                    old_context["target"] if old_context else None,
+                ) != (title.strip(), brief, json.dumps(agents), max_calls, seconds, target):
                     raise Denied("Conflit de création")
                 return old["id"]
             mid = str(uuid.uuid4())
@@ -97,6 +109,11 @@ class Missions:
                     request_key,
                 ),
             )
+            if target:
+                db.execute(
+                    "INSERT INTO mission_context(mission,target) VALUES(?,?)",
+                    (mid, target),
+                )
             return mid
 
     def list(self):
@@ -123,6 +140,15 @@ class Missions:
                 )
             ]
             result["api_budget_usd"] = 0
+            context = db.execute(
+                "SELECT target,evidence FROM mission_context WHERE mission=?", (mid,)
+            ).fetchone()
+            result["target"] = context["target"] if context else None
+            result["evidence"] = (
+                json.loads(context["evidence"])
+                if context and context["evidence"]
+                else None
+            )
             return result
 
     def action(self, mid, action):
@@ -148,6 +174,32 @@ class Missions:
             else:
                 raise ValueError("Action inconnue")
 
+    def prepare_next(self):
+        """Collect evidence in the runner, not in the memory-limited web service."""
+        with self.store.db() as db:
+            row = db.execute(
+                "SELECT m.id,c.target FROM missions m JOIN mission_context c ON c.mission=m.id "
+                "WHERE m.status='queued' AND c.evidence IS NULL ORDER BY m.created LIMIT 1"
+            ).fetchone()
+        if not row:
+            return False
+        mid, target = row["id"], row["target"]
+        try:
+            evidence = self.collector(target, Path(self.store.path).parent / "evidence" / mid)
+        except Exception:  # noqa: BLE001 — never publish provider diagnostics or secrets
+            with self.store.db() as db:
+                db.execute(
+                    "UPDATE missions SET status='failed',error=? WHERE id=? AND status='queued'",
+                    ("Inspection impossible ; aucun agent appelé.", mid),
+                )
+            return True
+        with self.store.db() as db:
+            db.execute(
+                "UPDATE mission_context SET evidence=? WHERE mission=? AND evidence IS NULL",
+                (json.dumps(evidence, ensure_ascii=False), mid),
+            )
+        return True
+
     def reserve(self):
         with self.store.db() as db:
             # No concurrent model calls. Expired reservations remain charged.
@@ -161,6 +213,11 @@ class Missions:
             if not row:
                 return None
             m = dict(row)
+            context = db.execute(
+                "SELECT target,evidence FROM mission_context WHERE mission=?", (m["id"],)
+            ).fetchone()
+            if context and context["target"] and not context["evidence"]:
+                return None
             now = time.time()
             if m["status"] == "queued":
                 m["deadline"] = now + m["seconds"]
@@ -196,6 +253,7 @@ class Missions:
                 "previous": list(reversed(prior)),
                 "ordinal": m["calls"] + 1,
                 "max_calls": m["max_calls"],
+                "evidence": json.loads(context["evidence"]) if context and context["evidence"] else None,
             }
 
     def finish(self, turn, contribution=None):

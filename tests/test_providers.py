@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import httpx
 import pytest
@@ -160,3 +161,35 @@ def test_grok_structured_output_and_no_tools(monkeypatch):
         )["body"]
         == "ok"
     )
+
+
+def test_codex_receives_only_explicit_mission_capture(tmp_path, monkeypatch):
+    capture = tmp_path / "320.png"
+    capture.write_bytes(b"PNG")
+    seen = []
+
+    def fake(argv, _prompt, _cwd, _env, _timeout=120):
+        if argv[:3] == ["codex", "login", "status"]:
+            return "Logged in using ChatGPT"
+        seen.extend(argv)
+        Path(argv[argv.index("--output-last-message") + 1]).write_text(
+            '{"kind":"answer","body":"capture reçue"}'
+        )
+        return '{"item":{}}'
+
+    monkeypatch.setattr("agora.cli_provider.execute", fake)
+    result = generate_cli(
+        {"provider": "codex-cli", "model": "gpt-6-astra", "operator_authorized": True},
+        "Observe la capture",
+        {},
+        images=[capture],
+    )
+    assert json.loads(result)["kind"] == "answer"
+    assert seen[seen.index("--image") + 1] == str(capture)
+    with pytest.raises(ValueError, match="invalid mission capture"):
+        generate_cli(
+            {"provider": "codex-cli", "model": "gpt-6-astra", "operator_authorized": True},
+            "Observe la capture",
+            {},
+            images=[tmp_path / "missing.png"],
+        )

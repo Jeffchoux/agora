@@ -35,11 +35,13 @@ def provider_key(config, default_env="AGORA_MODEL_KEY"):
     return value
 
 
-def generate(config, prompt):
+def generate(config, prompt, images=()):
     if config["provider"] in {"codex-cli", "claude-cli", "grok-cli"}:
         return Contribution.model_validate_json(
-            generate_cli(config, prompt, Contribution.model_json_schema())
+            generate_cli(config, prompt, Contribution.model_json_schema(), images=images)
         )
+    if images:
+        raise ValueError("images are supported only by the CLI participant")
     # Provider configuration belongs to the agent operator, not to an inbox message.
     with httpx.Client(timeout=120, follow_redirects=False) as http:
         if config["provider"] == "ollama":
@@ -54,7 +56,7 @@ def generate(config, prompt):
                     "think": False,
                     "format": Contribution.model_json_schema(),
                     "messages": [{"role": "user", "content": prompt}],
-                    "options": {"num_predict": 512, "num_ctx": 4096},
+                    "options": {"num_predict": 512, "num_ctx": 8192},
                     "keep_alive": "1m",
                 },
             )
