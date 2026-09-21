@@ -3,7 +3,7 @@ from pathlib import Path
 from fastapi import Request
 from fastapi.responses import FileResponse, JSONResponse
 
-from agora.inspection import TARGETS, WIDTHS
+from agora.inspection import WIDTHS
 from agora.missions import PROFILES, Missions
 from agora.store import Denied
 
@@ -41,9 +41,10 @@ def install(app, store):
         )
 
     @app.get("/v1/console")
-    def overview():
+    def overview(request: Request):
+        target = request.query_params.get("target")
         return {
-            "missions": missions.list(),
+            "missions": missions.list(target),
             "agents": [
                 {
                     "id": k,
@@ -52,12 +53,25 @@ def install(app, store):
                 }
                 for k, v in PROFILES.items()
             ],
-            "targets": [
-                {"id": key, "label": value["label"], "repository": value["repository"], "website": value["website"]}
-                for key, value in TARGETS.items()
-            ],
+            "targets": missions.projects(),
             "api_budget_usd": 0,
         }
+
+    @app.get("/v1/console/projects")
+    def projects():
+        return missions.projects()
+
+    @app.post("/v1/console/projects")
+    async def create_project(request: Request):
+        try:
+            d = await request.json()
+            if not isinstance(d, dict):
+                raise TypeError("Objet requis")
+            return missions.create_project(
+                d.get("label"), d.get("repository"), d.get("website"), d.get("notes", "")
+            )
+        except (ValueError, TypeError, Denied) as exc:
+            return JSONResponse({"error": str(exc)}, status_code=400)
 
     @app.get("/v1/console/{mid}")
     def detail(mid: str):

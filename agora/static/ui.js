@@ -1,7 +1,8 @@
 'use strict';
 const $ = id => document.getElementById(id);
 let token = sessionStorage.getItem('agora-operator') || '', selected = null, busy = false;
-let listSnapshot = '', detailSnapshot = '', firstLoad = true, formSeeded = false;
+let listSnapshot = '', detailSnapshot = '', firstLoad = true, formSeeded = false, targetsSnapshot = '';
+let projectFilter = sessionStorage.getItem('agora-project') || 'all', targets = [], agentLabels = {};
 const labels = {draft:'Prête à lancer', queued:'En attente', running:'En cours', finished:'Échanges terminés', stopped:'Arrêtée', failed:'Échec', done:'Contribution reçue'};
 function el(tag, value, cls) { const n = document.createElement(tag); if (value !== undefined) n.textContent = value; if (cls) n.className = cls; return n; }
 function notice(value, error = false) { $('notice').textContent = value; $('notice').className = error ? 'error' : ''; }
@@ -13,15 +14,29 @@ async function api(path = '', body) {
 }
 function logout() { token = ''; sessionStorage.removeItem('agora-operator'); $('workspace').hidden = true; $('login').hidden = false; $('logout').hidden = true; selected = null; listSnapshot = detailSnapshot = ''; firstLoad = true; }
 async function refresh(force = false) {
-  const data = await api();
+  const scope = projectFilter;
+  const data = await api(scope === 'all' ? '' : '?target=' + encodeURIComponent(scope));
+  if (scope !== projectFilter) return;
   $('login').hidden = true; $('workspace').hidden = false; $('logout').hidden = false;
+  agentLabels = Object.fromEntries(data.agents.map(a => [a.id,a.label]));
   if (!$('agents').children.length) for (const a of data.agents) {
     const l = el('label', undefined, 'agent'), c = el('input'), t = el('span', a.label);
     c.type = 'checkbox'; c.value = a.id; c.name = 'agent'; c.checked = ['codex','qwen-coder'].includes(a.id);
     t.append(el('small', a.type)); l.append(c,t); $('agents').append(l);
   }
-  if (!$('target').children.length) for (const t of data.targets) {
-    const o = el('option', t.label + ' · ' + t.repository); o.value = t.id; $('target').append(o);
+  const nextTargets = JSON.stringify(data.targets);
+  if (nextTargets !== targetsSnapshot) {
+    const previousTarget = $('target').value;
+    targetsSnapshot = nextTargets; targets = data.targets;
+    $('target').replaceChildren(); $('project-filter').replaceChildren();
+    const all = el('option','Tous les projets'); all.value = 'all'; $('project-filter').append(all);
+    for (const t of targets) {
+      const option = el('option',t.label + ' · ' + t.repository); option.value = t.id; $('target').append(option);
+      const filter = el('option',t.label); filter.value = t.id; $('project-filter').append(filter);
+    }
+    if (!targets.some(t => t.id === projectFilter)) projectFilter = 'all';
+    $('project-filter').value = projectFilter;
+    $('target').value = targets.some(t => t.id === previousTarget) ? previousTarget : projectFilter !== 'all' ? projectFilter : targets[0]?.id || '';
   }
   if (!formSeeded && $('target').selectedOptions.length) {
     $('title').value = 'Revue de ' + $('target').selectedOptions[0].textContent.split(' · ')[0];
@@ -29,12 +44,15 @@ async function refresh(force = false) {
     formSeeded = true;
   }
   if (firstLoad) { $('compose').open = !data.missions.length; firstLoad = false; }
-  if (!selected || !data.missions.some(m => m.id === selected)) selected = data.missions[0]?.id || null;
-  const snapshot = JSON.stringify([data.missions, selected]);
+  const chosen = targets.find(t => t.id === projectFilter);
+  $('project-summary').textContent = chosen ? chosen.repository + ' · ' + chosen.website + (chosen.notes ? ' · ' + chosen.notes : '') : 'Choisissez un projet pour retrouver ses missions, ou affichez-les tous.';
+  const visible = data.missions.filter(m => projectFilter === 'all' || m.target === projectFilter);
+  if (!selected || !visible.some(m => m.id === selected)) { selected = visible[0]?.id || null; detailSnapshot = ''; }
+  const snapshot = JSON.stringify([visible, selected, projectFilter]);
   if (force || snapshot !== listSnapshot) {
     listSnapshot = snapshot; $('mission-list').replaceChildren();
-    if (!data.missions.length) $('mission-list').append(el('p','Aucune mission encore. Lancez une première vérification.','empty'));
-    for (const m of data.missions) {
+    if (!visible.length) $('mission-list').append(el('p','Aucune mission pour ce projet. Lancez une première vérification.','empty'));
+    for (const m of visible) {
       const b = el('button', undefined, 'mission-card' + (m.id === selected ? ' selected' : ''));
       b.type = 'button'; b.setAttribute('aria-current', m.id === selected ? 'true' : 'false');
       b.append(el('span', labels[m.status] || m.status, 'status'), el('strong', m.title), el('small', m.calls + ' / ' + m.max_calls + ' appels'));
@@ -42,11 +60,15 @@ async function refresh(force = false) {
     }
   }
   if (selected) await show(selected, false, force);
-  else { $('detail').hidden = true; detailSnapshot = ''; }
+  else {
+    const box = $('detail'); box.hidden = false; detailSnapshot = '';
+    box.replaceChildren(el('h2',chosen ? chosen.label : 'Aucune mission'), el('p','Ce projet est prêt. Choisissez les agents et lancez une vérification pour voir leurs réponses ici.','hint'));
+  }
 }
 async function show(id, focus = false, force = false) {
   selected = id;
   const m = await api('/' + encodeURIComponent(id)), snapshot = JSON.stringify(m), box = $('detail');
+  if (selected !== id) return;
   if (!force && snapshot === detailSnapshot) { if (focus) focusDetail(); return; }
   detailSnapshot = snapshot; box.hidden = false; box.replaceChildren();
   const heading = el('div', undefined, 'detail-head'), title = el('div');
@@ -61,8 +83,8 @@ async function show(id, focus = false, force = false) {
   const download = el('button','Exporter le rapport JSON','quiet');
   download.onclick = () => { const blob = new Blob([JSON.stringify(m,null,2)], {type:'application/json'}), url = URL.createObjectURL(blob), a = el('a'); a.href = url; a.download = 'agora-' + m.id + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); };
   actions.append(download); heading.append(title,actions); box.append(heading);
-  const target = m.evidence?.repository || m.target || 'Projet non connecté';
-  box.append(el('p', target + ' · ' + m.calls + ' / ' + m.max_calls + ' appels · ' + (m.seconds / 60) + ' min maximum', 'mission-meta'));
+  const target = m.evidence?.repository || targets.find(t => t.id === m.target)?.repository || (m.target ? 'Projet indisponible' : 'Projet non connecté');
+  box.append(el('p', target + ' · Agents : ' + m.agents.map(id => agentLabels[id] || id).join(', ') + ' · ' + m.calls + ' / ' + m.max_calls + ' appels · ' + (m.seconds / 60) + ' min maximum', 'mission-meta'));
   const answer = [...m.turns].reverse().find(t => t.status === 'done' && ['answer','review','artifact'].includes(t.kind));
   const latest = answer || [...m.turns].reverse().find(t => t.status === 'done');
   const result = el('section', undefined, 'result');
@@ -117,7 +139,13 @@ function evidenceView(m) {
     }
     views.append(card);
   }
-  section.append(views,el('p','Codex reçoit les captures visuelles ; les autres agents lisent les mesures et extraits. Aucun test unitaire du dépôt n’est exécuté par Agora.','hint'));
+  section.append(views);
+  if (e.limitations?.length) {
+    const limits = el('ul',undefined,'evidence-limitations');
+    for (const line of e.limitations) limits.append(el('li',line));
+    section.append(limits);
+  }
+  section.append(el('p','Codex reçoit les captures visuelles ; les autres agents lisent les mesures et extraits. Aucun test unitaire du dépôt n’est exécuté par Agora.','hint'));
   return section;
 }
 async function showCapture(id,width) {
@@ -131,9 +159,28 @@ async function showCapture(id,width) {
 }
 $('logout').onclick = logout;
 $('target').onchange = () => { if ($('title').value.startsWith('Revue de ')) $('title').value = 'Revue de ' + $('target').selectedOptions[0].textContent.split(' · ')[0]; };
-$('new-mission').onclick = () => { $('compose').open = true; $('compose').scrollIntoView({block:'start'}); $('target').focus({preventScroll:true}); };
+$('project-filter').onchange = () => {
+  projectFilter = $('project-filter').value; sessionStorage.setItem('agora-project',projectFilter);
+  if (projectFilter !== 'all') { $('target').value = projectFilter; $('target').onchange(); }
+  selected = null; detailSnapshot = ''; refresh(true).catch(e => notice(e.message,true));
+};
+$('new-project').onclick = () => { $('project-setup').open = true; $('project-setup').scrollIntoView({block:'start'}); $('project-label').focus({preventScroll:true}); };
+$('new-mission').onclick = () => { if (projectFilter !== 'all') { $('target').value = projectFilter; $('target').onchange(); } $('compose').open = true; $('compose').scrollIntoView({block:'start'}); $('target').focus({preventScroll:true}); };
 $('keyfile').onchange = async e => { const f = e.target.files[0]; if (!f) return; if (f.size > 1024) { notice('Fichier de clé invalide.',true); return; } token = (await f.text()).trim(); try { await refresh(); sessionStorage.setItem('agora-operator',token); notice('Atelier ouvert.'); } catch (err) { notice(err.message,true); } e.target.value = ''; };
 $('login-form').onsubmit = async e => { e.preventDefault(); token = $('token').value.trim(); try { await refresh(); sessionStorage.setItem('agora-operator',token); $('token').value = ''; notice('Atelier ouvert.'); } catch (err) { notice(err.message,true); } };
+$('project-form').onsubmit = async e => {
+  e.preventDefault(); if (busy) return; busy = true; $('save-project').disabled = true;
+  try {
+    const project = await api('/projects',{label:$('project-label').value,repository:$('project-repository').value,website:$('project-website').value,notes:$('project-notes').value});
+    projectFilter = project.id; sessionStorage.setItem('agora-project',project.id);
+    targetsSnapshot = ''; selected = null; await refresh(true);
+    $('target').value = project.id; $('target').onchange();
+    $('project-setup').open = false; $('compose').open = true;
+    $('compose').scrollIntoView({block:'start'}); $('title').focus({preventScroll:true});
+    notice('Projet enregistré. Choisissez les agents et lancez sa première vérification.');
+  } catch (err) { notice(err.message,true); }
+  finally { busy = false; $('save-project').disabled = false; }
+};
 $('mission-form').onsubmit = async e => {
   e.preventDefault(); if (busy) return;
   const agents = Array.from(document.querySelectorAll('[name=agent]:checked')).map(x => x.value);
@@ -141,6 +188,7 @@ $('mission-form').onsubmit = async e => {
   busy = true; $('create').disabled = true;
   try {
     const d = await api('',{title:$('title').value,target:$('target').value,brief:$('brief').value,agents,max_calls:Number($('calls').value),seconds:Number($('duration').value),request_key:crypto.randomUUID()});
+    projectFilter = $('target').value; sessionStorage.setItem('agora-project',projectFilter);
     selected = d.id; detailSnapshot = ''; await refresh(true); $('compose').open = false;
     try { await api('/' + encodeURIComponent(d.id) + '/start',{}); detailSnapshot = ''; await refresh(true); notice('Mission lancée. Les preuves sont relevées avant les échanges.'); }
     catch (startError) { notice('Mission préparée mais non lancée : ' + startError.message + '. Utilisez « Lancer cette mission » pour réessayer.',true); }

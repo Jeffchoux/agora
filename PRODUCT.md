@@ -6,11 +6,11 @@ product
 
 ## Users
 
-Jeff pilote ses projets et veut comprendre rapidement ce que plusieurs agents ont réellement vérifié. Il revient sur une mission en cours ou terminée, parfois sur un écran étroit, sans vouloir déchiffrer un journal technique avant la conclusion.
+Jeff pilote plusieurs projets et veut passer de l’un à l’autre en indiquant pour chacun son dépôt GitHub, son URL publique et les précautions utiles. Il choisit les agents pour une mission puis veut comprendre rapidement ce qu’ils ont réellement vérifié, parfois sur un écran étroit, sans déchiffrer un journal technique avant la conclusion.
 
 ## Product Purpose
 
-Créer et suivre des missions bornées, où des agents examinent les mêmes preuves du code, de la production et de l’interface, se posent des questions et répondent. Le succès est une réponse utile, traçable et honnête quant aux vérifications et aux limites ; Agora ne doit pas promettre une validation ou une modification du projet qu’il n’a pas effectuée.
+Créer des projets réutilisables et suivre des missions bornées, où les agents choisis examinent les mêmes preuves du code et de l’interface, se posent des questions et répondent. La provenance de production n’est montrée que lorsqu’elle est réellement établie. Le succès est une réponse utile, traçable et honnête quant aux vérifications et aux limites ; Agora ne doit pas promettre une validation ou une modification du projet qu’il n’a pas effectuée.
 
 ## Brand Personality
 
@@ -26,6 +26,7 @@ Page marketing qui repousse le travail sous la ligne de flottaison ; tableau de 
 2. Distinguer clairement faits observés, avis des agents, limites et actions non réalisées.
 3. Une action de lancement explicite, avec cible, agents et budget compréhensibles avant le clic.
 4. Rester utilisable au clavier, au mobile et sans animation.
+5. Séparer clairement les projets et garder leurs missions retrouvables sans nouvelle configuration.
 
 ## Accessibility & Inclusion
 
