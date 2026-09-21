@@ -1,5 +1,19 @@
 # Changelog
 
+## Decision briefs · 2026-09-21
+
+- Optional shared decision question, with one latest position per selected agent:
+  proceed, revise, or insufficient evidence; rationale, next check and source IDs.
+- Collected-source validation, explicit missing/failed responses, separate
+  agreement and completeness. No confidence scores, voting or automatic approval.
+- Previous structured positions accompany the bounded conversation context.
+- Local plain-text snapshot with preview, mission provenance and sharing warning.
+  It excludes the raw brief, chat and transcript; model-written text may still
+  contain sensitive project content and must be reviewed.
+- Three no-key public examples now end with explicitly fictional decision briefs.
+- Additive SQLite migration preserves existing missions. No Jev dependency,
+  new provider call, paid fallback or automatic publication was introduced.
+
 ## International welcome and workspace · 2026-09-21
 
 - English-first interface with a persistent French language choice, including

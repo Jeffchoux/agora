@@ -35,6 +35,46 @@
   let scenario = 'repo', step = 0;
   const translated = value => Array.isArray(value) ? value[AgoraI18n.language === 'fr' ? 1 : 0] : value;
   const roles = {'Code reviewer':'Relecteur code','Test reviewer':'Relecteur tests','UX reviewer':'Relecteur UX','Accessibility reviewer':'Relecteur accessibilité','Planner':'Planificateur','Challenger':'Contradicteur','You':'Vous'};
+  // Deliberately authored fixtures, never live mission results or external evidence.
+  const decisions = {
+    repo: {
+      question: copy('Should we ship this sign-up flow?', 'Faut-il livrer ce parcours d’inscription ?'),
+      verdicts: ['revise', 'insufficient_evidence'],
+      reasons: [copy('Add an explicit expired-invitation case to the release checklist.', 'Ajoutez le cas d’une invitation expirée à la liste de vérification.'), copy('The supplied sample does not establish whether that case is tested elsewhere.', 'L’échantillon ne permet pas de savoir si ce cas est testé ailleurs.')],
+      checks: [copy('Inspect the rest of the test suite before proposing a new test.', 'Consulter le reste de la suite avant de proposer un nouveau test.'), copy('Obtain a test report for the exact candidate commit.', 'Obtenir un rapport de test sur le commit candidat exact.')],
+      sources: [{id:'file:signup.ts', label:'signup.ts'}, {id:'file:signup.test.ts', label:'signup.test.ts'}]
+    },
+    site: {
+      question: copy('Can we sign off this entry screen for all visitors?', 'Peut-on valider cet écran d’entrée pour tous les visiteurs ?'),
+      verdicts: ['insufficient_evidence', 'insufficient_evidence'],
+      reasons: [copy('The action is visible in this fictional screenshot; visitor comprehension has not been observed.', 'L’action est visible dans cette capture fictive ; la compréhension des visiteurs n’a pas été observée.'), copy('A screenshot cannot establish keyboard access or readable contrast.', 'Une capture ne prouve ni l’accès au clavier ni un contraste lisible.')],
+      checks: [copy('Observe a first-time visitor finding the next step.', 'Observer un nouveau visiteur chercher la prochaine étape.'), copy('Test focus order, keyboard activation and contrast.', 'Tester l’ordre de focus, l’activation au clavier et le contraste.')],
+      sources: [{id:'view:320', label:'320 px — fictional observation'}]
+    },
+    idea: {
+      question: copy('Should we start a five-neighbor tool-sharing pilot?', 'Faut-il lancer un pilote de prêt d’outils entre cinq voisins ?'),
+      verdicts: ['proceed', 'revise'],
+      reasons: [copy('A small voluntary pilot could test actual borrowing before building software.', 'Un petit pilote volontaire pourrait tester les emprunts avant de construire un logiciel.'), copy('Lending rules and success criteria are still undefined. Set them before starting.', 'Les règles de prêt et les critères de réussite manquent encore. Il faut les définir avant de commencer.')],
+      checks: [copy('Confirm volunteers and record actual loans and returns.', 'Confirmer les volontaires et relever les emprunts et retours réels.'), copy('Agree responsibilities and a stop condition with the participants.', 'Définir les responsabilités et une condition d’arrêt avec les participants.')],
+      sources: []
+    }
+  };
+  const decisionHost = document.createElement('div');
+  decisionHost.id = 'demo-decision';
+  document.querySelector('.demo-controls').after(decisionHost);
+  function decisionExample() {
+    const data = decisions[scenario], agents = examples[scenario].turns[0].slice(0, 2);
+    const labels = Object.fromEntries(agents.map(agent => [agent, AgoraI18n.language === 'fr' ? roles[agent] : agent]));
+    return AgoraDecisions.render({agents, decision: {
+      question: translated(data.question), complete: true,
+      agreement: new Set(data.verdicts).size > 1 ? 'mixed' : 'aligned',
+      references: data.sources,
+      positions: agents.map((agent, index) => ({agent, status:'done', turn_id:null, assessment: {
+        verdict:data.verdicts[index], rationale:translated(data.reasons[index]),
+        next_check:translated(data.checks[index]), references:data.sources.map(source => source.id)
+      }}))
+    }}, {agentLabels:labels, isExample:true});
+  }
   function render() {
     const example = examples[scenario], turn = example.turns[step];
     $('demo-brief').textContent = translated(example.brief);
@@ -43,6 +83,8 @@
     $('demo-progress').textContent = `${step + 1} / ${example.turns.length}`;
     $('demo-prev').disabled = step === 0;
     $('demo-next').textContent = translated(step === 3 ? copy('Replay ↺', 'Revoir ↺') : copy('Next response →', 'Réponse suivante →'));
+    decisionHost.replaceChildren();
+    if (step === 3) decisionHost.append(decisionExample());
   }
   document.querySelectorAll('[data-scenario]').forEach(button => button.addEventListener('click', () => {
     scenario = button.dataset.scenario; step = 0;

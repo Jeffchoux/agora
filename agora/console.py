@@ -34,6 +34,14 @@ def install(app, store):
     def landing_css():
         return public_asset("landing.css")
 
+    @app.get("/decisions.js")
+    def decisions_js():
+        return public_asset("decisions.js")
+
+    @app.get("/decisions.css")
+    def decisions_css():
+        return public_asset("decisions.css")
+
     @app.get("/")
     def index():
         return FileResponse(
@@ -144,6 +152,7 @@ def install(app, store):
             if not isinstance(d, dict):
                 raise TypeError("Objet requis")
             mid = missions.create(
+                decision_question=d.get("decision_question", ""),
                 **{
                     k: d.get(k)
                     for k in [

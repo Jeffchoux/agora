@@ -7,6 +7,7 @@ import uuid
 from pathlib import Path
 
 from agora.config import profiles
+from agora.decisions import decision_view, validate_assessment
 from agora.inspection import TARGETS, collect, normalize_repository, normalize_website
 from agora.store import Denied
 
@@ -80,6 +81,10 @@ class Missions:
             # executescript ends the Store transaction. Reacquire it so concurrent
             # web/runner starts cannot interleave the migration or lose projects.
             db.execute("BEGIN IMMEDIATE")
+            if not any(r["name"] == "decision_question" for r in db.execute("PRAGMA table_info(missions)")):
+                db.execute("ALTER TABLE missions ADD COLUMN decision_question TEXT NOT NULL DEFAULT ''")
+            if not any(r["name"] == "assessment" for r in db.execute("PRAGMA table_info(mission_turns)")):
+                db.execute("ALTER TABLE mission_turns ADD COLUMN assessment TEXT")
             if any(r["name"] == "repository" and r["notnull"] for r in db.execute("PRAGMA table_info(console_projects)")):
                 db.execute("ALTER TABLE console_projects RENAME TO console_projects_required_sources")
                 db.execute("""CREATE TABLE console_projects (
@@ -161,7 +166,10 @@ class Missions:
             db.execute("INSERT INTO project_chat(project,body,request_key,created) VALUES(?,?,?,?)",
                        (project, body.strip(), request_key, time.time()))
 
-    def create(self, title, brief, agents, max_calls, seconds, request_key, target=None):
+    def create(self, title, brief, agents, max_calls, seconds, request_key, target=None, decision_question=""):
+        if not isinstance(decision_question, str) or len(decision_question.strip()) > 500:
+            raise ValueError("Decision question must be text, at most 500 characters")
+        decision_question = decision_question.strip()
         if not isinstance(title, str) or not 1 <= len(title.strip()) <= 100:
             raise ValueError("Titre requis, 100 caractères maximum")
         if not isinstance(brief, str) or not 10 <= len(brief) <= 8000:
@@ -196,12 +204,13 @@ class Missions:
                     old["max_calls"],
                     old["seconds"],
                     old_context["target"] if old_context else None,
-                ) != (title.strip(), brief, json.dumps(agents), max_calls, seconds, target):
+                    old["decision_question"],
+                ) != (title.strip(), brief, json.dumps(agents), max_calls, seconds, target, decision_question):
                     raise Denied("Conflit de création")
                 return old["id"]
             mid = str(uuid.uuid4())
             db.execute(
-                "INSERT INTO missions(id,title,brief,agents,max_calls,seconds,created,request_key) VALUES(?,?,?,?,?,?,?,?)",
+                "INSERT INTO missions(id,title,brief,agents,max_calls,seconds,created,request_key,decision_question) VALUES(?,?,?,?,?,?,?,?,?)",
                 (
                     mid,
                     title.strip(),
@@ -211,6 +220,7 @@ class Missions:
                     seconds,
                     time.time(),
                     request_key,
+                    decision_question,
                 ),
             )
             if target:
@@ -250,6 +260,7 @@ class Missions:
             ]
             prior = []
             for turn in result["turns"]:
+                turn["assessment"] = json.loads(turn["assessment"]) if turn["assessment"] else None
                 turn.update(interaction(result["agents"], turn["ordinal"], result["max_calls"], prior))
                 if turn["status"] == "done":
                     # Old missions may contain contributions from earlier dispatchers.
@@ -267,6 +278,7 @@ class Missions:
                 if context and context["evidence"]
                 else None
             )
+            result["decision"] = decision_view(result)
             return result
 
     def action(self, mid, action):
@@ -362,15 +374,18 @@ class Missions:
             prior = [
                 dict(r)
                 for r in db.execute(
-                    "SELECT agent,kind,body FROM mission_turns WHERE mission=? AND status='done' ORDER BY ordinal DESC LIMIT 3",
+                    "SELECT agent,kind,body,assessment FROM mission_turns WHERE mission=? AND status='done' ORDER BY ordinal DESC LIMIT 3",
                     (m["id"],),
                 )
             ]
+            for item in prior:
+                item["assessment"] = json.loads(item["assessment"]) if item["assessment"] else None
             return {
                 "turn": tid,
                 "mission": m["id"],
                 "agent": agent,
                 "brief": m["brief"],
+                "decision_question": m["decision_question"],
                 "project_chat": [dict(r) for r in db.execute("SELECT body FROM project_chat WHERE project=? ORDER BY id DESC LIMIT 8", (context["target"],))][::-1] if context else [],
                 **interaction(json.loads(m["agents"]), m["calls"] + 1, m["max_calls"], list(reversed(prior))),
                 "previous": list(reversed(prior)),
@@ -396,9 +411,15 @@ class Missions:
                     (row["mission"],),
                 )
             else:
+                assessment = None
+                if contribution.assessment is not None:
+                    context = db.execute("SELECT evidence FROM mission_context WHERE mission=?", (row["mission"],)).fetchone()
+                    evidence = json.loads(context["evidence"]) if context and context["evidence"] else None
+                    # Revalidate at the write boundary, including mutated model instances.
+                    assessment = validate_assessment(contribution.assessment.model_dump(), evidence)
                 db.execute(
-                    "UPDATE mission_turns SET status='done',body=?,kind=? WHERE id=?",
-                    (contribution.body, contribution.kind, turn),
+                    "UPDATE mission_turns SET status='done',body=?,kind=?,assessment=? WHERE id=?",
+                    (contribution.body, contribution.kind, json.dumps(assessment, ensure_ascii=False) if assessment is not None else None, turn),
                 )
                 db.execute(
                     "UPDATE missions SET status='finished' WHERE id=? AND calls>=max_calls AND status='running'",

@@ -129,6 +129,18 @@ translated. New agent responses follow the language of the mission brief.
    and a small call limit, then choose **Start review**.
 4. **Around the table** shows the current speaker and question/answer direction.
    **All exchanges** opens the transcript; **Export JSON report** saves it.
+5. Optionally fill **Decision to resolve** before starting, for example:
+   “Should we start a five-person pilot?” All agents assess that same proposal.
+   The **Decision brief** shows each latest position, reasons and next check.
+   Expand its preview to download a local `.txt` snapshot. It contains project
+   content: review it before sharing. No upload or publication takes place.
+
+Positions are `proceed`, `revise`, or `insufficient_evidence`, not an automated
+approval. A missing structured response is shown as missing; AGORA does not retry
+to manufacture consensus. An invalid source ID fails the call, which still counts
+toward the budget. Provider support and output quality vary; the optional format
+does not guarantee factual correctness. Leave the question empty for a regular
+mission. Existing missions are unchanged.
 
 Success means a real contribution appears and the mission finishes within its
 configured limits. A queued mission has not yet received a model response.

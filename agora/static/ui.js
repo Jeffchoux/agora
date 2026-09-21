@@ -221,6 +221,7 @@ async function show(id, focus = false, force = false) {
   actions.append(download); heading.append(title,actions); box.append(heading);
   const target = m.evidence?.repository || targets.find(t => t.id === m.target)?.label || (m.target ? tr('projectUnavailable') : tr('projectNotConnected'));
   box.append(el('p', tr('missionMeta', {project:target, agents:m.agents.map(id => agentLabels[id] || id).join(', '), count:m.calls, limit:m.max_calls, minutes:m.seconds / 60}), 'mission-meta'));
+  if (m.decision) box.append(AgoraDecisions.render(m, {agentLabels, onOpenTurn:openTurn}));
   box.append(conversationView(m));
   const answer = [...m.turns].reverse().find(t => t.status === 'done' && ['answer','review','artifact'].includes(t.kind));
   const latest = answer || [...m.turns].reverse().find(t => t.status === 'done');
@@ -451,7 +452,7 @@ $('mission-form').onsubmit = async e => {
   if (!agents.length || agents.length > 4 || Number($('calls').value) < agents.length) { $('compose').open = true; document.querySelector('.advanced').open = true; notice(tr('agentSelectionError'),true); return; }
   busy = true; $('create').disabled = true;
   try {
-    const d = await api('',{title:$('title').value,target:$('target').value,brief:$('brief').value,agents,max_calls:Number($('calls').value),seconds:Number($('duration').value),request_key:crypto.randomUUID()});
+    const d = await api('',{title:$('title').value,target:$('target').value,brief:$('brief').value,decision_question:$('decision-question').value,agents,max_calls:Number($('calls').value),seconds:Number($('duration').value),request_key:crypto.randomUUID()});
     guardSession(generation);
     projectFilter = $('target').value; sessionStorage.setItem('agora-project',projectFilter);
     selected = d.id; detailSnapshot = ''; await refresh(true); guardSession(generation); $('compose').open = false;

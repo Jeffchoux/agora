@@ -1,0 +1,29 @@
+.decision-room { margin:0 0 28px; padding:0 0 24px; border-bottom:1px solid var(--line); min-width:0; }
+.decision-room p,.decision-room h3,.decision-room h4,.decision-room dd,.decision-room li { overflow-wrap:anywhere; }
+.decision-question { font-size:23px; line-height:1.3; max-width:65ch; }
+.decision-completion { margin-top:16px; color:var(--muted); font-size:13px; }
+.decision-agreement { font-size:16px; font-weight:700; }
+.decision-example { display:inline-block; margin:0 0 14px; padding:6px 10px; background:var(--soft); border:1px solid var(--line); border-radius:6px; font-size:12px; font-weight:700; }
+.decision-positions { list-style:none; margin:20px 0; padding:0; }
+.decision-positions>li { padding:18px 0; border-top:1px solid var(--line); }
+.decision-position-heading { display:flex; justify-content:space-between; align-items:baseline; gap:12px; flex-wrap:wrap; }
+.decision-position-heading h4 { margin:0; font-size:16px; }
+.decision-verdict { color:var(--ink); background:var(--soft); border:1px solid var(--line); border-radius:6px; padding:4px 8px; font-size:12px; font-weight:700; max-width:100%; }
+.decision-reasons { margin:14px 0; max-width:72ch; }
+.decision-reasons dt,.decision-sources-label { font-weight:700; font-size:12px; color:var(--muted); margin:12px 0 4px; }
+.decision-reasons dd { margin:0; font-size:14px; white-space:pre-wrap; }
+.decision-sources { margin:4px 0 8px; padding-left:20px; font-size:12px; color:var(--muted); }
+.decision-read { margin-top:8px; min-height:44px; }
+.decision-disclaimer { max-width:75ch; font-size:13px; color:var(--muted); }
+.decision-export { margin-top:20px; }
+.decision-export>summary { min-height:44px; padding:10px 0; font-size:14px; }
+.decision-report { white-space:pre-wrap; overflow-wrap:anywhere; overflow:auto; max-height:28rem; max-width:100%; margin:14px 0; padding:16px; border:1px solid var(--line); border-radius:6px; background:var(--paper); color:var(--ink); font:13px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace; }
+.decision-export>button { min-height:44px; max-width:100%; white-space:normal; }
+.demo-workbench .decision-room { --ink:oklch(96% .008 155); --muted:oklch(87% .018 155); --line:oklch(65% .025 165); --paper:oklch(22% .03 165); --soft:oklch(30% .035 165); color:var(--ink); }
+.demo-workbench .decision-room button { background:transparent; color:var(--ink); border-color:var(--line); }
+@media (max-width:420px) {
+  .decision-question { font-size:20px; }
+  .decision-position-heading { display:block; }
+  .decision-verdict { display:inline-block; margin-top:8px; }
+  .decision-report { padding:12px; }
+}

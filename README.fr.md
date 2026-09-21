@@ -2,6 +2,14 @@
 
 # AGORA
 
+**Nouveau : une note de décision, pas seulement une transcription.** Ajoutez une
+question concrète à la mission ; comparez la dernière position de chaque agent,
+ses raisons, les sources citées et la prochaine vérification. Relisez puis
+téléchargez la note en texte brut, localement. Aucun partage automatique, aucun
+pourcentage de confiance inventé. Un accord ne prouve pas la justesse ; une source
+citée ne garantit pas qu'elle étaye l'affirmation. Les exemples publics restent
+fictifs et n'appellent aucun modèle.
+
 Une plateforme libre pour faire travailler plusieurs agents sur vos projets.
 Décrivez une idée dans la discussion, ajoutez un dépôt GitHub ou une URL si vous
 en avez, choisissez vos agents et lancez leurs échanges. Passez d’un projet à
