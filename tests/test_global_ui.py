@@ -18,7 +18,7 @@ from agora.server import create_app
 def test_public_example_does_not_expose_operator_data(tmp_path, monkeypatch):
     monkeypatch.delenv("AGORA_LEGACY_INSTALLATION", raising=False)
     client = TestClient(create_app(tmp_path / "db"))
-    for path in ("/", "/i18n.js", "/messages.js", "/landing.js", "/landing.css"):
+    for path in ("/", "/i18n.js", "/messages.js", "/landing.js", "/landing.css", "/decisions.js", "/decisions.css"):
         response = client.get(path)
         assert response.status_code == 200
         assert response.headers["cache-control"] == "no-store"
@@ -31,13 +31,14 @@ def test_public_example_does_not_expose_operator_data(tmp_path, monkeypatch):
 
 
 @pytest.fixture
-def browser_server(tmp_path, monkeypatch):
+def browser_server(tmp_path, monkeypatch, request):
     if os.environ.get("AGORA_BROWSER_TESTS") != "1":
         pytest.skip("Opt-in: AGORA_BROWSER_TESTS=1; install Playwright Chromium first")
     key = tmp_path / "operator.key"
     key.write_text("browser-fixture-not-a-real-credential")
     profiles = tmp_path / "agents.json"
-    profiles.write_text(json.dumps({"local": {"label": "Fixture local agent", "provider": "ollama", "model": "fixture-only"}}))
+    names = getattr(request, "param", ["local"])
+    profiles.write_text(json.dumps({name: {"label": "Fixture " + name + " agent", "provider": "ollama", "model": "fixture-only"} for name in names}))
     profiles.chmod(0o600)
     env = dict(os.environ, AGORA_ADMIN_TOKEN_FILE=str(key), AGORA_AGENTS_FILE=str(profiles), AGORA_DB=str(tmp_path / "db"))
     env.pop("AGORA_LEGACY_INSTALLATION", None)
@@ -81,6 +82,21 @@ def test_international_first_visit_and_workspace(browser_server, width, tmp_path
             for step in range(1, 5):
                 expect(page.locator("#demo-progress")).to_have_text(f"{step} / 4")
                 assert page.locator("#demo-body").inner_text()
+                if step == 4:
+                    board = page.locator("#demo-decision")
+                    expect(board).to_contain_text("Fictional example · no model calls")
+                    expect(board.locator(".decision-positions > li")).to_have_count(2)
+                    assert not page.evaluate("document.documentElement.scrollWidth > innerWidth")
+                    board.locator("summary").click()
+                    with page.expect_download() as download:
+                        board.get_by_role("button", name="Download decision brief (.txt)").click()
+                    report = Path(download.value.path()).read_text()
+                    assert "Fictional example · no model calls" in report
+                    assert "Agreement does not establish truth" in report
+                    if scenario == "repo":
+                        artifacts = Path(os.environ.get("AGORA_BROWSER_ARTIFACTS", str(tmp_path)))
+                        artifacts.mkdir(parents=True, exist_ok=True)
+                        board.screenshot(path=str(artifacts / f"decision-example-{width}.png"))
                 page.locator("#demo-next").click()
         assert not any("/v1/" in url for _, url in requests), requests
         page.locator("#language").select_option("fr")
@@ -106,12 +122,14 @@ def test_international_first_visit_and_workspace(browser_server, width, tmp_path
         expect(page.locator("#notice")).to_contain_text("Project saved")
         page.locator("#title").fill("Keep my title")
         page.locator("#brief").fill("Do not translate or erase my own brief.")
+        page.locator("#decision-question").fill("Should we launch this pilot?")
         page.locator('[name="agent"]').check()
         page.locator("#chat-body").fill("Une idée à conserver, not UI copy.")
         page.locator("#language").select_option("fr")
         expect(page.locator("#new-project")).to_have_text("Ajouter un projet")
         expect(page.locator("#title")).to_have_value("Keep my title")
         expect(page.locator("#brief")).to_have_value("Do not translate or erase my own brief.")
+        expect(page.locator("#decision-question")).to_have_value("Should we launch this pilot?")
         expect(page.locator("#chat-body")).to_have_value("Une idée à conserver, not UI copy.")
         expect(page.locator('[name="agent"]')).to_be_checked()
         page.locator("#language").select_option("en")
@@ -119,6 +137,8 @@ def test_international_first_visit_and_workspace(browser_server, width, tmp_path
         expect(page.locator("#detail")).to_be_visible()
         expect(page.locator("#detail")).to_contain_text("Queued")
         expect(page.locator("#detail")).to_contain_text("Keep my title")
+        expect(page.locator("#detail .decision-room")).to_contain_text("Should we launch this pilot?")
+        expect(page.locator("#detail .decision-room")).to_contain_text("0 of 1 selected agents")
         page.locator("#show-welcome").click()
         expect(page.locator("#welcome")).to_be_visible()
         page.locator("#language").select_option("fr")
@@ -149,4 +169,61 @@ def test_international_first_visit_and_workspace(browser_server, width, tmp_path
         expect(page.locator("#detail")).to_be_empty()
         assert not errors, errors
         assert not any(not url.startswith(browser_server) for _, url in requests), requests
+        browser.close()
+
+
+@pytest.mark.parametrize("browser_server", [["local", "second"]], indirect=True)
+def test_decision_snapshot_export_and_failed_latest(browser_server, tmp_path, monkeypatch):
+    from playwright.sync_api import expect, sync_playwright
+
+    from agora.missions import Missions
+    from agora.store import Store
+    from agora.worker import Contribution
+
+    monkeypatch.delenv("AGORA_LEGACY_INSTALLATION", raising=False)
+    monkeypatch.setenv("AGORA_AGENTS_FILE", str(tmp_path / "agents.json"))
+    missions = Missions(Store(tmp_path / "db"))
+    mid = missions.create("Decision browser fixture", "PRIVATE_BRIEF_SENTINEL", ["local", "second"],
+                          4, 600, "snapshot", decision_question="Should we ship <img src=x onerror=alert(1)>?")
+    missions.action(mid, "start")
+    for verdict in ("proceed", "revise"):
+        turn = missions.reserve()
+        missions.finish(turn["turn"], Contribution(kind=turn["expected_kind"], body="PRIVATE_BODY_SENTINEL", assessment={
+            "verdict": verdict, "rationale": "<script>window.injected=true</script>",
+            "next_check": "Observe the missing journey.", "references": []}))
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page(viewport={"width": 320, "height": 1000})
+        errors = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        page.goto(browser_server)
+        page.locator("#show-login").click()
+        page.locator("#token").fill("browser-fixture-not-a-real-credential")
+        page.locator("#login-form button").click()
+        page.locator("#mission-list button").first.click()
+        board = page.locator("#detail .decision-room")
+        expect(board).to_contain_text("Positions differ")
+        expect(board).to_contain_text("Provisional · 2 of 2")
+        expect(board.locator("img, script")).to_have_count(0)
+        assert page.evaluate("window.injected") is None
+        board.locator("summary").click()
+        expect(board.locator(".decision-report")).to_be_visible()
+        with page.expect_download() as download:
+            board.get_by_role("button", name="Download decision brief (.txt)").click()
+        report = Path(download.value.path()).read_text()
+        assert mid in report and "Decision browser fixture" in report
+        assert "PRIVATE_BRIEF_SENTINEL" not in report and "PRIVATE_BODY_SENTINEL" not in report
+        assert "<script>window.injected=true</script>" in report
+        assert download.value.suggested_filename.endswith(".txt")
+        assert not page.evaluate("document.documentElement.scrollWidth > innerWidth")
+        board.locator(".decision-read").first.click()
+        expect(page.locator("#conversation-transcript")).to_have_attribute("open", "")
+        # Latest failure hides the older positive assessment, without inventing a vote.
+        missions.finish(missions.reserve()["turn"])
+        page.locator("#language").select_option("fr")
+        expect(board).to_contain_text("Dernier appel échoué")
+        expect(board).to_contain_text("Provisoire · 1 agents choisis sur 2")
+        expect(board.locator(".decision-verdict").first).to_have_text("Dernier appel échoué")
+        expect(board.locator(".decision-report")).to_be_visible()
+        assert not errors, errors
         browser.close()

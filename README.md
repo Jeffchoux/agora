@@ -22,6 +22,15 @@ still apply. No provider account, subscription or credit is bundled.
    and GitHub checks. For a website, it captures three viewport sizes.
 4. **Follow the exchange.** See who is asking, who is answering, and who goes
    next. Click a contribution to read it, then export the report.
+5. **Leave with a decision brief.** Optionally ask one concrete decision question.
+   Compare each agent's latest position, rationale, linked sources and next check.
+   Preview a plain-text brief and download it locally; nothing is published.
+
+For example: **“Should we ship this sign-up flow?”** One agent may ask for a
+revision while another needs more evidence. AGORA keeps that disagreement visible
+instead of averaging it into a confidence score. Missing or failed contributions
+do not count as approval. Source links identify collected material; they do not
+prove the agent interpreted it correctly.
 
 Questions and answers are sequential, not simultaneous independent research.
 The live view refreshes every ten seconds. Its motion reflects an active call,
@@ -92,6 +101,7 @@ uv run --no-sync ruff check agora tests ops
 The interface starts in English; switch to French from the language selector.
 The public landing includes three authored interactive examples, with no key,
 sign-up or model call. Examples are fictional, not real audit results.
+Each example ends with a decision brief you can preview and download.
 Your project text and agent responses are never automatically translated.
 The `ops/` scripts target the maintainer's historical deployment; do not run
 them to install your own instance. Architecture and detailed provider notes

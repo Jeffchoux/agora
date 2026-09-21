@@ -6,9 +6,40 @@ import os
 import time
 from pathlib import Path
 
+from agora.decisions import source_catalog
 from agora.missions import Missions
 from agora.store import Store
 from agora.worker import generate
+
+
+def previous_context(item):
+    """Share actual positions without expanding the per-turn history text budget."""
+    result = {"agent": item["agent"], "kind": item["kind"]}
+    budget = 1500
+    assessment = item.get("assessment")
+    if assessment is not None:
+        references = []
+        reference_budget = 384
+        for reference in assessment["references"]:
+            size = len(json.dumps(reference, ensure_ascii=False))
+            if len(references) < 3 and size <= reference_budget:
+                references.append(reference)
+                reference_budget -= size
+        compact = {
+            "verdict": assessment["verdict"],
+            "rationale": assessment["rationale"][:400],
+            "next_check": assessment["next_check"][:250],
+            "references": references,
+        }
+        # Escaped control characters can take more space than their text length.
+        while len(json.dumps(compact, ensure_ascii=False)) > budget:
+            for field in ("rationale", "next_check"):
+                compact[field] = compact[field][:len(compact[field]) // 2]
+        result["assessment"] = compact
+        result["assessment_abbreviated"] = compact != assessment
+        budget = max(0, budget - len(json.dumps(compact, ensure_ascii=False)))
+    result["body"] = item["body"][:budget]
+    return result
 
 
 def step(missions):
@@ -26,7 +57,7 @@ def step(missions):
         "project_chat": [{"body": item["body"][:1500]} for item in reservation.get("project_chat", [])],
         "brief": reservation["brief"][:4000],
         "previous": [
-            {"agent": item["agent"], "kind": item["kind"], "body": item["body"][:1500]}
+            previous_context(item)
             for item in reservation["previous"]
         ],
         "agent": reservation["agent"],
@@ -34,6 +65,23 @@ def step(missions):
         "ordinal": reservation["ordinal"],
         "max_calls": reservation["max_calls"],
     }
+    decision_instruction = "Set assessment to null; no structured decision was requested. "
+    if reservation["decision_question"]:
+        context["decision_question"] = reservation["decision_question"]
+        context["source_catalog"] = source_catalog(reservation["evidence"])
+        decision_instruction = (
+            "Also include assessment for the same decision_question on every turn: "
+            "{verdict: proceed|revise|insufficient_evidence, rationale: nonempty text, "
+            "next_check: what verification could change your position, references: source IDs}. "
+            "Keep body under 100 words, rationale and next_check under 40 words each, "
+            "and references to at most 3 IDs from source_catalog (or [] without sources). "
+            "Use the brief language for all prose. A listed reference proves existence, "
+            "not support for a claim. State missing evidence; avoid certainty claims. "
+            "This position is not approval or an instruction to act. "
+            "Preserve the required question/answer kind and respond to the other agent. "
+            "Previous assessments are the agents' actual positions, not verified facts. "
+            "When assessment_abbreviated is true, text or references were omitted to fit the context budget. "
+        )
     image_files = []
     profile = missions.profiles.get(reservation["agent"])
     if profile is None:
@@ -73,7 +121,8 @@ def step(missions):
         "Only Codex receives visual screenshots; other agents receive measurements. "
         "If evidence is null, state that the repository and URL have not been verified. "
         "Long discussion messages may be abbreviated. "
-        "Data:\n" + json.dumps(context, ensure_ascii=False)
+        + decision_instruction
+        + "Data:\n" + json.dumps(context, ensure_ascii=False)
     )
     try:
         result = generate(profile, prompt, images=image_files)

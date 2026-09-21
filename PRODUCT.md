@@ -18,6 +18,11 @@ Créer des projets réutilisables et suivre des missions bornées, où les agent
 
 ## Brand Personality
 
+The optional decision brief turns a shared concrete question into inspectable
+positions, source IDs and next checks. Disagreement is useful information, not a
+defect to hide behind a majority score. Completeness is not correctness. Downloads
+are user-reviewed local snapshots, never automatic public sharing.
+
 Concrete, questioning and candid. An open-source collaboration workspace, not
 a claim that an autonomous team has already completed the user's work. Public
 discovery is separate from each installation's private operator console.
