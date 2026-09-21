@@ -42,8 +42,11 @@ Aucun agent ne peut publier, fusionner ou déployer depuis Agora.
 ## Conséquences et limites
 
 Un résultat « vert » couvre seulement les checks rapportés et les mesures
-collectées. Les extraits de code ne couvrent pas tout le dépôt. Les captures
-visuelles ne sont vues que par Codex et l'opérateur. Les parcours connectés,
+collectées. Les extraits de code ne couvrent pas tout le dépôt. La présence
+ou l'absence d'un test dans cet échantillon ne démontre pas la couverture
+totale ; un fichier E2E sur les pays est inclus pour le parcours de repli
+BoostMyBiz. Les captures visuelles ne sont vues que par Codex et l'opérateur.
+Les parcours connectés,
 paiements, tests unitaires relancés et modifications de code restent hors de
 ce premier incrément. Un échec de collecte marque la mission en échec et
 n'appelle aucun modèle. Les anciennes missions sans cible restent lisibles et

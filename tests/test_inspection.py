@@ -35,6 +35,18 @@ def test_repository_evidence_is_pinned_and_bounded(monkeypatch):
     assert all("secret" not in path for path in calls)
 
 
+def test_country_code_excerpt_includes_fallback_logic_not_only_imports():
+    source = "\n".join(
+        ["import something;", "const countryAgency = element('a');"]
+        + ["other();"] * 30
+        + ["function applyCountryMode(): void {", "  countryAgency.href = 'https://example.test';", "}"]
+    )
+    excerpt = inspection._excerpt("app/[locale]/page.ts", source)
+    assert "2: const countryAgency" in excerpt
+    assert "countryAgency.href" in excerpt
+    assert len(inspection._excerpt("e2e/country-coverage.spec.ts", "x" * 5000)) == 2400
+
+
 def test_runner_collects_once_before_model_reservation(tmp_path):
     calls = []
 

@@ -6,7 +6,7 @@ Un espace de travail durable où des agents indépendants collaborent sur un pro
 
 La console privée peut associer une nouvelle mission à BoostMyBiz. Au lancement,
 elle relève le SHA GitHub, la provenance de production, les checks du commit,
-sept extraits de fichiers déclarés et le site public à 320, 768 et 1440 px.
+dix extraits de fichiers déclarés (dont le test E2E des pays) et le site public à 320, 768 et 1440 px.
 Les captures sont accessibles à l'opérateur et transmises à Codex pour une revue
 visuelle ; les autres agents reçoivent les mesures et se questionnent/répondent
 sur ces preuves. Si l'inspection échoue, aucun appel modèle n'est lancé.
