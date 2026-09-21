@@ -1,18 +1,35 @@
 # AGORA
 
-Une plateforme libre pour faire travailler plusieurs agents sur vos projets.
-Décrivez une idée dans la discussion, ajoutez un dépôt GitHub ou une URL si vous
-en avez, choisissez vos agents et lancez leurs échanges. Passez d’un projet à
-l’autre en conservant le contexte, les questions, les réponses et les rapports.
+[Français](README.fr.md) · [Get started](docs/INSTALL.en.md) · [Contribute](CONTRIBUTING.md)
 
-**Agora est gratuit, sous licence MIT.** Chacun installe son espace et connecte
-ses propres modèles locaux, API ou CLI authentifiés. Les tarifs et quotas des
-fournisseurs restent applicables : aucun abonnement, crédit API ou identifiant
-du créateur n’est fourni avec le logiciel.
+**Watch your agents question each other. Follow the evidence.**
 
-## Démarrer
+AGORA is a self-hosted workspace where different AI agents collaborate on a
+project. Describe an idea, attach a GitHub repository or a public website if you
+have one, choose your agents, and follow their questions and answers.
 
-Prérequis : Python 3.11+ et [uv](https://docs.astral.sh/uv/).
+Bring your own local models, API keys or supported subscription CLIs.
+The software is free under the [MIT license](LICENSE); provider fees and quotas
+still apply. No provider account, subscription or credit is bundled.
+
+## What happens in a mission?
+
+1. **Describe your project.** Keep its goals and constraints in a persistent
+   conversation. A repository and a website are both optional.
+2. **Choose your agents.** Select one to four configured participants and set
+   limits before starting.
+3. **Collect evidence.** For a repository, AGORA reads a bounded sample of files
+   and GitHub checks. For a website, it captures three viewport sizes.
+4. **Follow the exchange.** See who is asking, who is answering, and who goes
+   next. Click a contribution to read it, then export the report.
+
+Questions and answers are sequential, not simultaneous independent research.
+The live view refreshes every ten seconds. Its motion reflects an active call,
+can be paused, and respects reduced-motion preferences.
+
+## Start your own workspace
+
+You need Python 3.11+ and [uv](https://docs.astral.sh/uv/).
 
 ```sh
 git clone https://github.com/Jeffchoux/agora.git
@@ -21,57 +38,58 @@ uv sync --locked --no-build
 uv run --no-sync python -m agora init
 ```
 
-Le programme crée une configuration privée dans `~/.config/agora`, sans activer
-de fournisseur. Suivez le **[guide d’installation et de connexion](docs/INSTALL.md)**
-pour ajouter vos agents et ouvrir la console locale.
+Initialization creates private files in `~/.config/agora`. It does not activate
+an agent or make a model call. Continue with the **[installation guide](docs/INSTALL.en.md)**
+to connect your own agent and start the console and runner.
 
-## Fonctionnalités
+Already using Ollama? Configure a model you have installed and try a
+description-only project. GitHub CLI and Chromium are only needed when you
+inspect repositories and websites respectively.
 
-- Plusieurs projets : idée seule, dépôt seul, URL seule ou sources combinées.
-- Discussion persistante pour expliquer chaque projet.
-- Choix de 1 à 4 agents ; missions bornées à 12 appels maximum.
-- Questions d’un agent, réponses du suivant, synthèse et export JSON.
-- Vue des échanges : agent actif, destinataire, prochaine intervention et
-  passages de parole cliquables. Animation liée à l’appel en cours, désactivable.
-- Lecture d’un échantillon de code et des checks GitHub lorsque le dépôt est fourni.
-- Captures du site public sur mobile, tablette et ordinateur lorsque l’URL est fournie.
-- Participants indépendants avec accès restreints par projet via A2A.
+## Connect the tools you already use
 
-## Vos agents, vos accès
+| Access | Adapter | What you supply |
+| --- | --- | --- |
+| Local models | Ollama | An installed local model |
+| Subscription CLI | Codex, Claude, Grok | A compatible CLI logged into your account |
+| Compatible API | OpenAI-compatible endpoint | Your endpoint, model and API key |
+| Free OpenRouter route | OpenRouter free | Your key and an eligible free route |
 
-Adaptateurs : Ollama, Codex CLI, Claude CLI, Grok CLI, OpenRouter gratuit et API
-compatibles OpenAI (dont Mistral, Gemini et Groq). Un profil configuré ne garantit
-pas la disponibilité du quota. Les CLI doivent être compatibles avec la version
-installée et leurs abonnements restent soumis aux conditions des fournisseurs.
+Mistral, Gemini and Groq can use the compatible API adapter. Availability depends
+on your account and provider. A configured profile does not prove that a model
+is available or free. A subscription login is different from an API key.
 
-Les clés restent dans un fichier privé ou dans l’environnement de l’opérateur.
-La console n’affiche pas ces secrets. Le contenu du projet est transmis aux
-agents sélectionnés : utilisez des modèles locaux si les données doivent rester
-sur votre machine.
+Credentials stay in the operator's environment or private files and are not
+returned by the console API. Project context goes to the agents you select.
 
-## Limites actuelles
+## Current boundaries
 
-Une installation correspond à un opérateur de confiance. La console utilise
-sa clé d’accès ; elle n’est pas un service public avec inscription et coffre de
-clés séparé par utilisateur. Installez votre propre instance et gardez sa clé
-d’administration privée. L’instance hébergée du mainteneur reste son espace privé.
+- **One trusted operator per installation.** The console's access key controls
+  all projects and connected agents in that instance. This is not a public
+  multi-tenant service. The maintainer's hosted instance is private.
+- **Read-only inspection.** AGORA does not execute repository tests, edit code,
+  or certify a project. The file sample is not a full codebase review.
+- **Public HTTPS websites.** Cross-origin resources are blocked, so some pages
+  may render incompletely. Authenticated user journeys are not covered.
+- **Model-specific inputs.** Codex currently receives screenshots; other
+  participants receive measured page data and code excerpts.
+- **Bounded usage, not a monetary guarantee.** Console missions allow at most
+  twelve calls. Set financial limits with your provider.
+- **A2A participation is scoped.** Project invitations support independently
+  operated participants. Not every A2A capability is implemented.
 
-Agora ne lance pas les tests du dépôt et ne modifie pas son code. Les agents
-reçoivent un échantillon, pas toute la base de code. Les URL sont publiques et
-HTTPS ; les ressources externes sont bloquées, ce qui peut limiter le rendu.
-Seul Codex reçoit actuellement les captures ; les autres agents reçoivent les
-mesures et extraits. Sans source fournie, l’analyse porte sur le contexte décrit.
+## Help shape AGORA
 
-## Développement
+Try a small real project and tell us where setup or the result is unclear.
+[Contribution guide](CONTRIBUTING.md) · [Report a bug](https://github.com/Jeffchoux/agora/issues/new)
+· [Security](SECURITY.md) · [Changelog](CHANGELOG.md)
 
 ```sh
 uv run --no-sync pytest -q
 uv run --no-sync ruff check agora tests ops
 ```
 
-[Architecture](docs/ARCHITECTURE.md) · [Fournisseurs et A2A](docs/PROVIDERS.md) ·
-[Installation et migration](docs/INSTALL.md).
-
-Les scripts `ops/` décrivent l’installation historique du mainteneur ; ce ne sont
-pas des installateurs universels. Aucune tâche GitHub Actions ni aucun appel
-payant n’est activé par le clonage ou l’initialisation.
+The interface is currently in French. The English guide maps the UI labels.
+The `ops/` scripts target the maintainer's historical deployment; do not run
+them to install your own instance. Architecture and detailed provider notes
+are currently available in French in [docs/](docs/ARCHITECTURE.md).
