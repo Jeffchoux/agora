@@ -90,12 +90,40 @@ def test_console_screenshot_requires_operator_and_recorded_evidence(tmp_path, mo
     assert client.get(url).status_code == 401
     assert client.get(url, headers={"Authorization": "Bearer private-test-key"}).content == b"PNG"
     assert client.get(url.replace("320", "768"), headers={"Authorization": "Bearer private-test-key"}).status_code == 404
+    assert client.get("/capture.css").status_code == 200
+    assert "img-src 'self' blob:" in client.get("/").headers["content-security-policy"]
 
 
 def test_only_registered_target_is_accepted(tmp_path):
     missions = Missions(Store(tmp_path / "db.sqlite"))
     with pytest.raises(ValueError, match="Projet non connecté"):
         missions.create("Audit", "Vérifier le vrai site.", ["codex"], 1, 300, "four", "https://127.0.0.1/")
+
+
+def test_public_link_probe_rejects_unregistered_destinations():
+    target = inspection.TARGETS["boostmybiz"]
+    good = "https://postpilot-rho-inky.vercel.app/agence/demarrer?source=boostmybiz&lang=en&country=US"
+    assert inspection._approved_link(good, target)
+    for bad in (
+        "http://postpilot-rho-inky.vercel.app/agence/demarrer",
+        "https://postpilot-rho-inky.vercel.app.evil.test/agence/demarrer",
+        "https://postpilot-rho-inky.vercel.app/other",
+        "https://postpilot-rho-inky.vercel.app:8443/agence/demarrer",
+    ):
+        assert not inspection._approved_link(bad, target)
+
+    class Page:
+        def evaluate(self, *_args):
+            return "https://evil.test/collect"
+
+        request = None
+        keyboard = None
+
+    assert inspection._public_link_probe(Page(), target) == {
+        "label": "Describe my project",
+        "present": True,
+        "destination_allowed": False,
+    }
 
 
 def test_agents_exchange_evidence_based_questions_and_answers(tmp_path, monkeypatch):

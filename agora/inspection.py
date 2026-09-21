@@ -15,6 +15,11 @@ TARGETS = {
         "label": "BoostMyBiz",
         "repository": "Jeffchoux/BoostMyBiz.pro",
         "website": "https://boostmybiz.pro/",
+        "public_link": {
+            "label": "Describe my project",
+            "host": "postpilot-rho-inky.vercel.app",
+            "path": "/agence/demarrer",
+        },
         "production_manifest": "/home/galaxia/.local/share/astra/deployments/boostmybiz.json",
         "files": (
             "AGENTS.md",
@@ -94,6 +99,66 @@ def _production(target):
         return None
 
 
+def _approved_link(href, target):
+    parsed = urlparse(href)
+    link = target["public_link"]
+    return parsed.scheme == "https" and parsed.netloc == link["host"] and parsed.path == link["path"]
+
+
+def _public_link_probe(page, target):
+    """Exercise a fixed, public fallback link without submitting a form."""
+    label = target["public_link"]["label"]
+    href = page.evaluate(
+        """label => [...document.querySelectorAll('a')]
+          .find(a => a.textContent.trim() === label && a.getClientRects().length)?.href || null""",
+        label,
+    )
+    if not href:
+        return {"label": label, "present": False}
+    if not _approved_link(href, target):
+        return {"label": label, "present": True, "destination_allowed": False}
+    tab_steps = None
+    page.evaluate("document.activeElement?.blur()")
+    for step in range(1, 81):
+        page.keyboard.press("Tab")
+        if page.evaluate(
+            "label => document.activeElement?.textContent.trim() === label", label
+        ):
+            tab_steps = step
+            break
+    enter_opened_expected = None
+    if tab_steps is not None:
+        try:
+            with page.context.expect_page(timeout=5000) as new_page:
+                page.keyboard.press("Enter")
+            popup = new_page.value
+            try:
+                popup.wait_for_load_state("domcontentloaded", timeout=10000)
+                enter_opened_expected = _approved_link(popup.url, target)
+            finally:
+                popup.close()
+        except PlaywrightError:
+            enter_opened_expected = False
+    try:
+        response = page.request.get(href, max_redirects=0, timeout=10000)
+        destination_status = response.status
+        destination_location = response.headers.get("location")
+    except PlaywrightError:
+        destination_status = None
+        destination_location = None
+    return {
+        "label": label,
+        "present": True,
+        "destination_allowed": True,
+        "href": href,
+        "tab_reachable": tab_steps is not None,
+        "tab_steps": tab_steps,
+        "enter_opened_expected": enter_opened_expected,
+        "destination_status": destination_status,
+        "destination_location": destination_location,
+    }
+
+
 def _browser(target, capture_dir):
     origin = urlparse(target["website"])
     results = []
@@ -117,12 +182,12 @@ def _browser(target, capture_dir):
                         request_url.scheme == "https"
                         and request_url.hostname == origin.hostname
                         and route.request.method == "GET"
-                    ):
+                    ) or (route.request.method == "GET" and _approved_link(route.request.url, target)):
                         route.continue_()
                     else:
                         route.abort()
 
-                page.route("**/*", allow_known_origin)
+                context.route("**/*", allow_known_origin)
                 try:
                     response = page.goto(target["website"], wait_until="domcontentloaded", timeout=15000)
                     page.wait_for_timeout(500)
@@ -140,11 +205,13 @@ def _browser(target, capture_dir):
                     screenshot = capture_dir / f"{width}.png"
                     page.screenshot(path=str(screenshot), full_page=False, timeout=10000)
                     screenshot.chmod(0o600)
+                    probe = _public_link_probe(page, target) if width == 768 else None
                     results.append({
                         "viewport": width,
                         "http_status": response.status if response else None,
                         "page_errors": errors[:5],
                         "screenshot": f"{width}.png",
+                        **({"public_link_probe": probe} if probe is not None else {}),
                         **state,
                     })
                 except (PlaywrightError, OSError) as exc:
@@ -175,5 +242,6 @@ def collect(target_id, capture_dir):
             "Échantillon de fichiers, pas revue exhaustive du dépôt.",
             "Contrôles navigateur publics et résultats CI ; aucun test du code du dépôt exécuté par Agora.",
             "Codex reçoit les captures ; les autres participants voient les mesures DOM.",
+            "Le lien public de repli est vérifié par Tab, Entrée et GET ; formulaire non soumis.",
         ],
     }
