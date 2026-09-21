@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import secrets
 from pathlib import Path
 
 from agora.client import Client
@@ -13,6 +14,8 @@ def main():
     )
     p.add_argument("--db", default=os.environ.get("AGORA_DB", "state/agora.sqlite"))
     sub = p.add_subparsers(dest="cmd", required=True)
+    setup = sub.add_parser("init", help="Create private local installation files")
+    setup.add_argument("--directory", default=str(Path.home() / ".config" / "agora"))
     c = sub.add_parser("create")
     c.add_argument("project")
     c.add_argument("--brief-file", required=True)
@@ -39,7 +42,20 @@ def main():
     r.add_argument("agent")
     a = p.parse_args()
     os.umask(0o077)
-    if a.cmd == "create":
+    if a.cmd == "init":
+        directory = Path(a.directory).expanduser()
+        directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+        if directory.stat().st_uid != os.getuid() or directory.stat().st_mode & 0o077:
+            raise ValueError("Choose a private directory owned by your account (mode 0700)")
+        files = {"operator.key": secrets.token_urlsafe(32) + "\n", "agents.json": "{}\n", "credentials.json": "{}\n"}
+        for name, content in files.items():
+            target = directory / name
+            if not target.exists():
+                with target.open("x") as f:
+                    f.write(content)
+        print("Private configuration ready: " + str(directory))
+        print("Open operator.key locally to sign in. Add your own profiles to agents.json; no provider has been activated.")
+    elif a.cmd == "create":
         Store(a.db).create_project(
             a.project, Path(a.brief_file).read_text(), a.max_messages
         )

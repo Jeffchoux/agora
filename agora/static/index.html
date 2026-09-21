@@ -17,27 +17,34 @@
       <div class="workspace-title"><div><p class="eyebrow">VOTRE ESPACE DE TRAVAIL</p><h1>Les missions</h1></div><button id="new-mission" class="primary">Nouvelle vérification</button></div>
       <section class="project-toolbar" aria-label="Choisir un projet"><div><label for="project-filter">Projet affiché</label><select id="project-filter"></select></div><button id="new-project" class="quiet">Ajouter un projet</button><p id="project-summary" class="hint"></p></section>
       <details id="project-setup" class="panel project-setup"><summary>Ajouter un projet à Agora</summary>
-        <p class="hint">Indiquez le dépôt GitHub et l’URL publique du site. L’ajout n’appelle aucun agent ; une mission ne part qu’après votre clic sur « Lancer ».</p>
+        <p class="hint">Commencez par un projet ou une idée. Vous pouvez joindre un dépôt GitHub, un site, ou simplement expliquer votre besoin. L’ajout n’appelle aucun agent.</p>
         <form id="project-form">
-          <div class="project-fields"><div><label for="project-label">Nom du projet</label><input id="project-label" required maxlength="80" placeholder="Ex. Ricky Club"></div><div><label for="project-repository">Dépôt GitHub</label><input id="project-repository" required maxlength="250" placeholder="https://github.com/compte/depot" autocomplete="url"></div><div><label for="project-website">URL du site public</label><input id="project-website" required type="url" maxlength="2048" placeholder="https://exemple.com/" autocomplete="url"></div></div>
+          <div class="project-fields"><div><label for="project-label">Nom du projet</label><input id="project-label" required maxlength="80" placeholder="Ex. Mon prochain projet"></div><div><label for="project-repository">Dépôt GitHub (facultatif)</label><input id="project-repository" maxlength="250" placeholder="https://github.com/compte/depot" autocomplete="url"></div><div><label for="project-website">URL du site public (facultatif)</label><input id="project-website" type="url" maxlength="2048" placeholder="https://exemple.com/" autocomplete="url"></div></div>
           <label for="project-notes">Autres détails utiles (facultatif)</label><textarea id="project-notes" maxlength="2000" rows="3" placeholder="Parcours à examiner, public visé, précautions… N’indiquez pas de clé API."></textarea>
           <p class="hint">HTTPS public uniquement. Les dépôts privés doivent déjà être accessibles au compte GitHub du serveur. Pour un nouveau projet, la correspondance entre le site et le commit GitHub n’est pas certifiée.</p>
           <button class="primary" id="save-project">Enregistrer le projet</button>
         </form>
       </details>
+      <section id="project-chat" class="panel" hidden aria-label="Discussion du projet">
+        <h2>Parlons du projet</h2>
+        <p class="hint">Expliquez votre idée, vos objectifs et vos contraintes. Les huit derniers messages complètent le contexte des agents (extraits de 1 500 caractères maximum chacun). Enregistrer un message ne consomme aucun appel.</p>
+        <div id="chat-messages" aria-live="polite"></div>
+        <form id="chat-form"><label for="chat-body">Votre message</label><textarea id="chat-body" required maxlength="4000" rows="3" placeholder="Ce que je veux construire, pour qui, et ce que les agents doivent éclaircir…"></textarea><button id="save-message" class="quiet">Ajouter à la discussion</button> <button id="ask-agents" type="button" class="primary">Préparer une réponse des agents</button></form>
+      </section>
+      <details class="panel"><summary>Mes connexions d’agents</summary><p class="hint">Cette installation utilise vos propres accès. Les agents configurés apparaissent dans le choix ci-dessous. Pour en ajouter, suivez le <a href="https://github.com/Jeffchoux/agora/blob/main/docs/INSTALL.md" target="_blank" rel="noopener noreferrer">guide de connexion</a>. Les clés restent sur votre machine ou votre serveur. Un abonnement n’est pas une clé API ; les tarifs et quotas dépendent de votre fournisseur.</p><p id="connections-status" class="hint"></p></details>
       <div class="workspace-grid">
         <section id="detail" class="panel detail" hidden aria-label="Mission sélectionnée"></section>
         <aside class="sidebar">
           <section class="history"><h2>Missions récentes</h2><div id="mission-list"></div></section>
           <details id="compose" class="panel compose"><summary>Nouvelle vérification <span aria-hidden="true">＋</span></summary>
-            <p class="hint">Agora inspecte le commit GitHub, les checks et trois vues du site avant d’interroger les agents. La provenance de production n’est comparée que si elle est configurée. Aucun code du projet n’est exécuté.</p>
+            <p class="hint">Les agents utilisent votre discussion et les sources fournies. Avec un dépôt : lecture de code et des checks GitHub. Avec une URL : trois vues du site. Aucun code du projet n’est exécuté.</p>
             <form id="mission-form">
               <label for="target">Projet connecté</label><select id="target" required></select>
               <label for="title">Nom de la mission</label><input id="title" required maxlength="100" placeholder="Ex. Vérifier le parcours d’accueil">
               <label for="brief">Question aux agents</label><textarea id="brief" required minlength="10" maxlength="8000" rows="5" placeholder="Que faut-il vérifier dans le code, le site et le parcours utilisateur ?"></textarea>
               <fieldset><legend>Agents à faire travailler (1 à 4)</legend><div id="agents" class="agents"></div></fieldset>
               <details class="advanced"><summary>Limites de la mission</summary><div class="limits"><div><label for="calls">Appels maximum</label><input id="calls" type="number" min="1" max="12" value="4" required></div><div><label for="duration">Durée maximum</label><select id="duration"><option value="300">5 minutes</option><option value="600" selected>10 minutes</option><option value="1200">20 minutes</option><option value="1800">30 minutes</option></select></div></div></details>
-              <p class="hint">Par défaut : Codex (abonnement) et Qwen Coder (local), 4 appels au plus, 10 minutes. Chaque tentative compte, même en cas d’échec. Aucune API facturée n’est autorisée ; abonnement et ressources locales restent utilisés. Les agents ne modifient pas le code.</p>
+              <p class="hint">4 appels au plus, 10 minutes par défaut. Chaque tentative compte, même en cas d’échec. Les API peuvent être gratuites ou facturées selon votre compte ; Agora ne garantit pas leur gratuité et ne fournit aucun crédit. Les agents ne modifient pas le code.</p>
               <button class="primary" id="create">Lancer la vérification</button>
             </form>
           </details>

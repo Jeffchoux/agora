@@ -3,6 +3,7 @@ const $ = id => document.getElementById(id);
 let token = sessionStorage.getItem('agora-operator') || '', selected = null, busy = false;
 let listSnapshot = '', detailSnapshot = '', firstLoad = true, formSeeded = false, targetsSnapshot = '';
 let projectFilter = sessionStorage.getItem('agora-project') || 'all', targets = [], agentLabels = {};
+let chatSnapshot = '';
 const labels = {draft:'Prête à lancer', queued:'En attente', running:'En cours', finished:'Échanges terminés', stopped:'Arrêtée', failed:'Échec', done:'Contribution reçue'};
 function el(tag, value, cls) { const n = document.createElement(tag); if (value !== undefined) n.textContent = value; if (cls) n.className = cls; return n; }
 function notice(value, error = false) { $('notice').textContent = value; $('notice').className = error ? 'error' : ''; }
@@ -19,6 +20,7 @@ async function refresh(force = false) {
   if (scope !== projectFilter) return;
   $('login').hidden = true; $('workspace').hidden = false; $('logout').hidden = false;
   agentLabels = Object.fromEntries(data.agents.map(a => [a.id,a.label]));
+  $('connections-status').textContent = data.agents.length ? data.agents.length + ' agents configurés. Leur disponibilité dépend de vos connexions et quotas.' : 'Aucun agent configuré. Connectez un modèle local, une API ou un CLI avec le guide ci-dessus.';
   if (!$('agents').children.length) for (const a of data.agents) {
     const l = el('label', undefined, 'agent'), c = el('input'), t = el('span', a.label);
     c.type = 'checkbox'; c.value = a.id; c.name = 'agent'; c.checked = ['codex','qwen-coder'].includes(a.id);
@@ -31,7 +33,7 @@ async function refresh(force = false) {
     $('target').replaceChildren(); $('project-filter').replaceChildren();
     const all = el('option','Tous les projets'); all.value = 'all'; $('project-filter').append(all);
     for (const t of targets) {
-      const option = el('option',t.label + ' · ' + t.repository); option.value = t.id; $('target').append(option);
+      const option = el('option',t.label + (t.repository ? ' · ' + t.repository : '')); option.value = t.id; $('target').append(option);
       const filter = el('option',t.label); filter.value = t.id; $('project-filter').append(filter);
     }
     if (!targets.some(t => t.id === projectFilter)) projectFilter = 'all';
@@ -45,7 +47,18 @@ async function refresh(force = false) {
   }
   if (firstLoad) { $('compose').open = !data.missions.length; firstLoad = false; }
   const chosen = targets.find(t => t.id === projectFilter);
-  $('project-summary').textContent = chosen ? chosen.repository + ' · ' + chosen.website + (chosen.notes ? ' · ' + chosen.notes : '') : 'Choisissez un projet pour retrouver ses missions, ou affichez-les tous.';
+  $('project-summary').textContent = chosen ? [chosen.repository, chosen.website, chosen.notes].filter(Boolean).join(' · ') || 'Projet décrit dans la discussion.' : 'Choisissez un projet pour retrouver ses missions, ou affichez-les tous.';
+  $('project-chat').hidden = !chosen;
+  if (chosen) {
+    const messages = await api('/projects/' + encodeURIComponent(chosen.id) + '/chat');
+    if (scope !== projectFilter) return;
+    const nextChat = JSON.stringify([chosen.id,messages]);
+    if (chatSnapshot !== nextChat) {
+      chatSnapshot = nextChat; $('chat-messages').replaceChildren();
+      for (const message of messages) { const entry = el('article',undefined,'turn'); entry.append(el('strong','Vous'),el('p',message.body,'prewrap')); $('chat-messages').append(entry); }
+      if (!messages.length) $('chat-messages').append(el('p','Décrivez le projet pour donner du contexte aux agents.','hint'));
+    }
+  }
   const visible = data.missions.filter(m => projectFilter === 'all' || m.target === projectFilter);
   if (!selected || !visible.some(m => m.id === selected)) { selected = visible[0]?.id || null; detailSnapshot = ''; }
   const snapshot = JSON.stringify([visible, selected, projectFilter]);
@@ -83,7 +96,7 @@ async function show(id, focus = false, force = false) {
   const download = el('button','Exporter le rapport JSON','quiet');
   download.onclick = () => { const blob = new Blob([JSON.stringify(m,null,2)], {type:'application/json'}), url = URL.createObjectURL(blob), a = el('a'); a.href = url; a.download = 'agora-' + m.id + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); };
   actions.append(download); heading.append(title,actions); box.append(heading);
-  const target = m.evidence?.repository || targets.find(t => t.id === m.target)?.repository || (m.target ? 'Projet indisponible' : 'Projet non connecté');
+  const target = m.evidence?.repository || targets.find(t => t.id === m.target)?.label || (m.target ? 'Projet indisponible' : 'Projet non connecté');
   box.append(el('p', target + ' · Agents : ' + m.agents.map(id => agentLabels[id] || id).join(', ') + ' · ' + m.calls + ' / ' + m.max_calls + ' appels · ' + (m.seconds / 60) + ' min maximum', 'mission-meta'));
   const answer = [...m.turns].reverse().find(t => t.status === 'done' && ['answer','review','artifact'].includes(t.kind));
   const latest = answer || [...m.turns].reverse().find(t => t.status === 'done');
@@ -118,9 +131,10 @@ async function show(id, focus = false, force = false) {
 function focusDetail() { const box = $('detail'); box.scrollIntoView({block:'start'}); box.tabIndex = -1; box.focus({preventScroll:true}); }
 function evidenceView(m) {
   const e = m.evidence, section = el('div',undefined,'evidence');
-  section.append(el('p',e.repository + ' · commit ' + e.github_sha.slice(0,12) + ' · ' + e.file_count + ' fichiers répertoriés'));
+  section.append(el('p',e.repository ? e.repository + ' · commit ' + e.github_sha.slice(0,12) + ' · ' + e.file_count + ' fichiers répertoriés' : 'Aucun dépôt fourni : les agents utilisent le contexte du projet et les sources disponibles.'));
   const links = el('p',undefined,'evidence-links');
   for (const [label,url] of [['Voir le commit','https://github.com/' + e.repository + '/commit/' + e.github_sha],['Ouvrir le site',e.website]]) {
+    if (!url || (label === 'Voir le commit' && !e.github_sha)) continue;
     const a = el('a',label); a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer'; links.append(a);
   }
   section.append(links);
@@ -158,6 +172,16 @@ async function showCapture(id,width) {
   } catch (error) { notice(error.message,true); }
 }
 $('logout').onclick = logout;
+$('chat-form').onsubmit = async e => {
+  e.preventDefault(); if (busy || projectFilter === 'all') return;
+  busy = true; $('save-message').disabled = true;
+  try { await api('/projects/' + encodeURIComponent(projectFilter) + '/chat',{body:$('chat-body').value,request_key:crypto.randomUUID()}); $('chat-body').value = ''; await refresh(); notice('Message enregistré dans le contexte du projet.'); }
+  catch (error) { notice(error.message,true); }
+  finally { busy = false; $('save-message').disabled = false; }
+};
+$('ask-agents').onclick = () => {
+  $('new-mission').click(); $('brief').value = $('chat-body').value.trim() || 'Répondez aux derniers messages de la discussion du projet. Posez-vous des questions et confrontez vos réponses pour proposer une prochaine étape concrète.'; $('brief').focus();
+};
 $('target').onchange = () => { if ($('title').value.startsWith('Revue de ')) $('title').value = 'Revue de ' + $('target').selectedOptions[0].textContent.split(' · ')[0]; };
 $('project-filter').onchange = () => {
   projectFilter = $('project-filter').value; sessionStorage.setItem('agora-project',projectFilter);
