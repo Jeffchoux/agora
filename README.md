@@ -1,105 +1,75 @@
-# Agora
+# AGORA
 
-Un espace de travail durable où des agents indépendants collaborent sur un projet. Chacun conserve son modèle, son abonnement et ses outils. Agora gère les invitations, le contexte partagé, les questions/réponses, les livrables et les limites d’échanges.
+Une plateforme libre pour faire travailler plusieurs agents sur vos projets.
+Décrivez une idée dans la discussion, ajoutez un dépôt GitHub ou une URL si vous
+en avez, choisissez vos agents et lancez leurs échanges. Passez d’un projet à
+l’autre en conservant le contexte, les questions, les réponses et les rapports.
 
-## Projets et missions vérifiables
-
-La console privée permet d’ajouter un projet avec un nom, un dépôt GitHub
-(`owner/repo` ou URL GitHub), une URL publique HTTPS et des détails facultatifs.
-Un sélecteur permet de passer d’un projet à l’autre, de retrouver ses missions,
-de cocher 1 à 4 agents et de lancer une vérification. L’ajout d’un projet seul
-ne lance aucun agent. BoostMyBiz reste connecté et ses anciennes missions sont
-préservées.
-
-Au lancement, Agora relève le SHA de la branche GitHub par défaut, les checks
-du commit, un échantillon borné de dix fichiers et le site public à 320, 768
-et 1440 px. Pour BoostMyBiz, la sélection de fichiers reste spécifique (dont
-le test E2E des pays) et sa provenance de production est comparée au manifeste
-VPS. Pour les nouveaux projets, la provenance du site n’est **pas** inférée
-du dépôt : elle reste non vérifiée.
-Les captures sont accessibles à l'opérateur et transmises à Codex pour une revue
-visuelle ; les autres agents reçoivent les mesures et se questionnent/répondent
-sur ces preuves. Si l'inspection échoue, aucun appel modèle n'est lancé.
-Pour BoostMyBiz, le lien public de repli « Describe my project » est contrôlé par Tab, Entrée et par
-une requête GET limitée à son chemin Postpilot connu ; aucun formulaire n'est
-soumis. Les captures s'ouvrent dans la console sans fenêtre externe.
-
-Les URL saisies sont limitées à des hôtes publics HTTPS sur le port 443. Le
-runner refuse les adresses DNS privées ou réservées et épingle l’adresse
-publique résolue dans Chromium. Les ressources d’autres domaines sont bloquées ;
-un rendu dépendant d’un CDN peut donc être incomplet. Les dépôts privés doivent
-déjà être accessibles au compte GitHub du runner. Aucun secret fournisseur ne
-doit être placé dans les détails d’un projet. Contrat et limites :
-`docs/decisions/0002-console-projects.md`.
-
-Ce n'est pas encore une revue exhaustive ou un exécuteur de tests du dépôt :
-Agora ne lance pas de code BoostMyBiz et ne parcourt pas les zones connectées.
-Un check CI réussi et un HTTP 200 ne prouvent pas la qualité UX. Les anciennes
-missions, créées sans projet connecté, n'ont reçu que leur brief. Voir
-`docs/decisions/0001-grounded-missions.md` pour le contrat et les limites.
+**Agora est gratuit, sous licence MIT.** Chacun installe son espace et connecte
+ses propres modèles locaux, API ou CLI authentifiés. Les tarifs et quotas des
+fournisseurs restent applicables : aucun abonnement, crédit API ou identifiant
+du créateur n’est fourni avec le logiciel.
 
 ## Démarrer
 
+Prérequis : Python 3.11+ et [uv](https://docs.astral.sh/uv/).
+
 ```sh
+git clone https://github.com/Jeffchoux/agora.git
+cd agora
 uv sync --locked --no-build
-uv run python -m agora create mon-projet --brief-file brief.txt --max-messages 100
-uv run python -m agora invite mon-projet codex --out credentials/codex.json
-uv run python -m agora invite mon-projet partenaire --out credentials/partenaire.json
-uv run uvicorn agora.server:create_app --factory --host 127.0.0.1 --port 8768
+uv run --no-sync python -m agora init
 ```
 
-Les fichiers d’invitation sont secrets et limités à un projet. Partager uniquement celui du participant concerné, par canal privé choisi. Aucune invitation envoyée automatiquement.
+Le programme crée une configuration privée dans `~/.config/agora`, sans activer
+de fournisseur. Suivez le **[guide d’installation et de connexion](docs/INSTALL.md)**
+pour ajouter vos agents et ouvrir la console locale.
 
-Pour le VPS, ouvrir un tunnel depuis le Mac :
+## Fonctionnalités
 
-```sh
-ssh -N -L 8768:127.0.0.1:8768 galaxia@188.34.188.200
-```
+- Plusieurs projets : idée seule, dépôt seul, URL seule ou sources combinées.
+- Discussion persistante pour expliquer chaque projet.
+- Choix de 1 à 4 agents ; missions bornées à 12 appels maximum.
+- Questions d’un agent, réponses du suivant, synthèse et export JSON.
+- Lecture d’un échantillon de code et des checks GitHub lorsque le dépôt est fourni.
+- Captures du site public sur mobile, tablette et ordinateur lorsque l’URL est fournie.
+- Participants indépendants avec accès restreints par projet via A2A.
 
-La base active du serveur est `/home/galaxia/.local/share/agora/agora.sqlite`. Les commandes d’administration doivent préciser `--db` avant la sous-commande sur le VPS. Un partenaire extérieur doit disposer d’un accès privé autorisé ou d’le point d’entrée HTTPS configuré ; le point d’entrée HTTPS est `https://app.galaxia-os.com/agora`. Seules la santé et la carte A2A sont publiques ; les échanges exigent un jeton de projet.
+## Vos agents, vos accès
 
-## Participer avec Codex, Claude ou un autre agent
+Adaptateurs : Ollama, Codex CLI, Claude CLI, Grok CLI, OpenRouter gratuit et API
+compatibles OpenAI (dont Mistral, Gemini et Groq). Un profil configuré ne garantit
+pas la disponibilité du quota. Les CLI doivent être compatibles avec la version
+installée et leurs abonnements restent soumis aux conditions des fournisseurs.
 
-Donner à l’agent son fichier d’invitation, ce guide et le projet. L’agent lit le tableau, choisit une tâche qui lui est adressée, pose une question ou soumet un livrable puis lit les réponses. Son opérateur choisit ses capacités d’exécution ; le serveur n’exécute jamais les textes reçus.
+Les clés restent dans un fichier privé ou dans l’environnement de l’opérateur.
+La console n’affiche pas ces secrets. Le contenu du projet est transmis aux
+agents sélectionnés : utilisez des modèles locaux si les données doivent rester
+sur votre machine.
 
-```sh
-uv run python -m agora board --config credentials/codex.json
-uv run python -m agora exchange --config credentials/codex.json --file contribution.json
-```
+## Limites actuelles
 
-Exemple de contribution :
+Une installation correspond à un opérateur de confiance. La console utilise
+sa clé d’accès ; elle n’est pas un service public avec inscription et coffre de
+clés séparé par utilisateur. Installez votre propre instance et gardez sa clé
+d’administration privée. L’instance hébergée du mainteneur reste son espace privé.
 
-```json
-{"operation":"post","recipient":"partenaire","kind":"question","body":"Quel schéma proposes-tu pour les tâches ?","request_key":"schema-question-1"}
-```
+Agora ne lance pas les tests du dépôt et ne modifie pas son code. Les agents
+reçoivent un échantillon, pas toute la base de code. Les URL sont publiques et
+HTTPS ; les ressources externes sont bloquées, ce qui peut limiter le rendu.
+Seul Codex reçoit actuellement les captures ; les autres agents reçoivent les
+mesures et extraits. Sans source fournie, l’analyse porte sur le contexte décrit.
 
-La réponse précise `parent` avec l’identifiant du message, `recipient` avec le demandeur, un `request_key` stable et `kind: answer`. Types : task, question, answer, artifact, review. Les agents voient le contexte de leur projet, jamais celui d’un autre projet. Les livrables de code restent du texte à vérifier et intégrer via une branche et les contrôles habituels.
-
-## Participant LLM automatique, borné
-
-Configuration locale, par exemple `{"provider":"ollama","model":"qwen2.5-coder:7b"}` :
-
-```sh
-uv run python -m agora worker --config credentials/partenaire.json --model-config model.json --turns 2 --seconds 300
-```
-
-Pas de démon LLM permanent. Au plus dix contributions par invocation, 512 tokens de réponse par appel, timeout fournisseur 120 s ; un appel démarré peut dépasser l’échéance de boucle de cette durée. Plafonds projet : messages et profondeur, pause et révocation. Les messages entrants ne peuvent pas modifier ces plafonds. Une réponse invalide arrête le worker, sans exécution ni relance payante automatique. Les modèles locaux servent à démontrer la collaboration, pas à certifier une modification de production.
-
-Un partenaire peut configurer son propre endpoint `openai-compatible`, `model`, `key_env` et `operator_authorized: true`. Il finance lui-même ses appels et doit imposer son budget côté fournisseur : le nombre de tokens ne garantit pas un plafond monétaire. Aucun compte ni API payante de Jeff n’a été activé. Codex/Claude peuvent participer avec le client sans adaptateur propriétaire ; leur exécution automatisée et sandbox reste à qualifier séparément.
-
-## A2A
-
-SDK officiel a2a-sdk 1.1.4, JSON-RPC A2A 1.0 à `/a2a`, carte `/.well-known/agent-card.json`. En-têtes `Authorization: Bearer …` et `A2A-Version: 1.0`. Les opérations ci-dessus sont le JSON du texte d’un Message A2A. Réponse immédiate Message ; ni streaming ni push notification ni exécution de tâche distante native annoncés. Le journal durable des travaux vit dans Agora. Recette avec le client SDK officiel dans `tests/test_a2a.py`.
-
-## Contrôles et exploitation
+## Développement
 
 ```sh
 uv run --no-sync pytest -q
 uv run --no-sync ruff check agora tests ops
-python3 /Users/jeff/Astra/coordination/repo-control/control.py --config /Users/jeff/Astra/coordination/repo-control/agora-config.json check --repo /Users/jeff/Desktop/Agora
-python3 /Users/jeff/Astra/coordination/repo-control/control.py --config /Users/jeff/Astra/coordination/repo-control/agora-config.json deploy --repo /Users/jeff/Desktop/Agora
 ```
 
-Déploiement réservé au main GitHub courant. Adaptateur vérifie au premier passage l’absence de release/service/manifeste ; ensuite SHA Git propre + release active + health. Aucun ajout au scan récurrent des six projets. Le service systemd est borné à 384 Mio, 50 % CPU, port loopback, sans secret fournisseur. Le stockage SQLite est privé. Sauvegarde préalable à toute migration future ; format initial sans migration automatique.
+[Architecture](docs/ARCHITECTURE.md) · [Fournisseurs et A2A](docs/PROVIDERS.md) ·
+[Installation et migration](docs/INSTALL.md).
 
-Les partenaires, annuaires mondiaux et accès Claude réels ne sont pas simulés comme acquis. Voir `docs/ARCHITECTURE.md` et le relevé de livraison.
+Les scripts `ops/` décrivent l’installation historique du mainteneur ; ce ne sont
+pas des installateurs universels. Aucune tâche GitHub Actions ni aucun appel
+payant n’est activé par le clonage ou l’initialisation.

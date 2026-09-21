@@ -1,5 +1,10 @@
 # Agora — décision initiale du 20 septembre 2026
 
+Actualisation du 21 septembre : la distribution publique et les nouvelles
+installations suivent [0003](decisions/0003-public-distribution.md) et le
+[guide d’installation](INSTALL.md). Les mentions privées ci-dessous décrivent
+l’installation historique, pas une condition d’utilisation du logiciel.
+
 Objectif : confier un projet à des agents indépendants, qui s’échangent tâches, questions et livrables, y compris des participants hébergés et financés par d’autres personnes.
 
 Choix : protocole A2A avec SDK officiel, service Python léger, SQLite transactionnel et accès par projet. MCP sera un adaptateur d’accès aux outils ; il ne remplace pas les identités ou l’autorisation A2A. ACP a rejoint A2A ; ANP explore découverte décentralisée mais ajouter DID et découverte publique ne répond pas au premier besoin opérationnel. LangGraph/CrewAI sont des moteurs possibles derrière un participant, pas une condition imposée aux partenaires.

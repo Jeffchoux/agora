@@ -1,10 +1,12 @@
 """Explicit, durable missions. Reservations survive failures and process restarts."""
 
 import json
+import os
 import time
 import uuid
 from pathlib import Path
 
+from agora.config import profiles
 from agora.inspection import TARGETS, collect, normalize_repository, normalize_website
 from agora.store import Denied
 
@@ -41,6 +43,8 @@ class Missions:
     def __init__(self, store, collector=collect):
         self.store = store
         self.collector = collector
+        self.profiles = profiles(PROFILES)
+        self.targets = TARGETS if os.environ.get("AGORA_LEGACY_INSTALLATION") == "1" else {}
         with store.db() as db:
             db.executescript("""
             CREATE TABLE IF NOT EXISTS missions (
@@ -57,16 +61,29 @@ class Missions:
               target TEXT NOT NULL, evidence TEXT);
             CREATE TABLE IF NOT EXISTS console_projects (
               id TEXT PRIMARY KEY, label TEXT NOT NULL,
-              repository TEXT NOT NULL, website TEXT NOT NULL,
+              repository TEXT, website TEXT,
               notes TEXT NOT NULL DEFAULT '', created REAL NOT NULL,
               UNIQUE(repository, website));
+            CREATE TABLE IF NOT EXISTS project_chat (
+              id INTEGER PRIMARY KEY, project TEXT NOT NULL,
+              body TEXT NOT NULL, request_key TEXT NOT NULL UNIQUE, created REAL NOT NULL);
             """)
+            # executescript ends the Store transaction. Reacquire it so concurrent
+            # web/runner starts cannot interleave the migration or lose projects.
+            db.execute("BEGIN IMMEDIATE")
+            if any(r["name"] == "repository" and r["notnull"] for r in db.execute("PRAGMA table_info(console_projects)")):
+                db.execute("ALTER TABLE console_projects RENAME TO console_projects_required_sources")
+                db.execute("""CREATE TABLE console_projects (
+                  id TEXT PRIMARY KEY, label TEXT NOT NULL, repository TEXT, website TEXT,
+                  notes TEXT NOT NULL DEFAULT '', created REAL NOT NULL, UNIQUE(repository,website))""")
+                db.execute("INSERT INTO console_projects SELECT * FROM console_projects_required_sources")
+                db.execute("DROP TABLE console_projects_required_sources")
 
     def projects(self):
         builtin = [
             {"id": key, "label": value["label"], "repository": value["repository"],
              "website": value["website"], "notes": "", "custom": False}
-            for key, value in TARGETS.items()
+            for key, value in self.targets.items()
         ]
         with self.store.db() as db:
             custom = [dict(row) | {"custom": True} for row in db.execute(
@@ -75,8 +92,8 @@ class Missions:
         return builtin + custom
 
     def project(self, target):
-        if target in TARGETS:
-            return {"id": target, **TARGETS[target], "custom": False, "notes": ""}
+        if target in self.targets:
+            return {"id": target, **self.targets[target], "custom": False, "notes": ""}
         with self.store.db() as db:
             row = db.execute(
                 "SELECT id,label,repository,website,notes FROM console_projects WHERE id=?",
@@ -84,17 +101,17 @@ class Missions:
             ).fetchone()
         return dict(row) | {"custom": True} if row else None
 
-    def create_project(self, label, repository, website, notes=""):
+    def create_project(self, label, repository=None, website=None, notes=""):
         if not isinstance(label, str) or not 1 <= len(label.strip()) <= 80:
             raise ValueError("Nom de projet requis, 80 caractères maximum")
         if not isinstance(notes, str) or len(notes) > 2000:
             raise ValueError("Détails du projet : 2 000 caractères maximum")
-        repository = normalize_repository(repository)
-        website = normalize_website(website)
+        repository = normalize_repository(repository) if repository else ""
+        website = normalize_website(website) if website else ""
         with self.store.db() as db:
             row = db.execute(
-                "SELECT id,label,repository,website,notes FROM console_projects WHERE repository=? AND website=?",
-                (repository, website),
+                "SELECT id,label,repository,website,notes FROM console_projects WHERE repository IS ? AND website IS ? AND (repository IS NOT NULL OR website IS NOT NULL)",
+                (repository or None, website or None),
             ).fetchone()
             if row:
                 if row["label"] != label.strip() or row["notes"] != notes.strip():
@@ -105,9 +122,35 @@ class Missions:
             project_id = str(uuid.uuid4())
             db.execute(
                 "INSERT INTO console_projects(id,label,repository,website,notes,created) VALUES(?,?,?,?,?,?)",
-                (project_id, label.strip(), repository, website, notes.strip(), time.time()),
+                (project_id, label.strip(), repository or None, website or None, notes.strip(), time.time()),
             )
         return self.project(project_id)
+
+    def chat(self, project):
+        if not self.project(project):
+            raise Denied("Projet introuvable")
+        with self.store.db() as db:
+            return [dict(r) for r in db.execute(
+                "SELECT id,body,created FROM project_chat WHERE project=? ORDER BY id LIMIT 50", (project,)
+            )]
+
+    def post_chat(self, project, body, request_key):
+        if not self.project(project):
+            raise Denied("Projet introuvable")
+        if not isinstance(body, str) or not 1 <= len(body.strip()) <= 4000:
+            raise ValueError("Message requis, 4 000 caractères maximum")
+        if not isinstance(request_key, str) or not 1 <= len(request_key) <= 80:
+            raise ValueError("Identifiant de message requis")
+        with self.store.db() as db:
+            old = db.execute("SELECT project,body FROM project_chat WHERE request_key=?", (request_key,)).fetchone()
+            if old:
+                if (old["project"], old["body"]) != (project, body.strip()):
+                    raise Denied("Conflit de message")
+                return
+            if db.execute("SELECT count(*) FROM project_chat WHERE project=?", (project,)).fetchone()[0] >= 50:
+                raise Denied("Limite de 50 messages atteinte pour ce projet")
+            db.execute("INSERT INTO project_chat(project,body,request_key,created) VALUES(?,?,?,?)",
+                       (project, body.strip(), request_key, time.time()))
 
     def create(self, title, brief, agents, max_calls, seconds, request_key, target=None):
         if not isinstance(title, str) or not 1 <= len(title.strip()) <= 100:
@@ -118,7 +161,7 @@ class Missions:
             not isinstance(agents, list)
             or not 1 <= len(agents) <= 4
             or len(set(agents)) != len(agents)
-            or any(a not in PROFILES for a in agents)
+            or any(a not in self.profiles for a in agents)
         ):
             raise ValueError("Choisir 1 à 4 agents disponibles")
         if type(max_calls) is not int or not len(agents) <= max_calls <= 12:
@@ -196,7 +239,7 @@ class Missions:
                     (mid,),
                 )
             ]
-            result["api_budget_usd"] = 0
+            result["api_budget_usd"] = None if any(self.profiles.get(a, {}).get("provider") in {"openai-compatible", "openrouter-free"} for a in result["agents"]) else 0
             context = db.execute(
                 "SELECT target,evidence FROM mission_context WHERE mission=?", (mid,)
             ).fetchone()
@@ -242,7 +285,7 @@ class Missions:
             return False
         mid, target = row["id"], row["target"]
         try:
-            source = target if target in TARGETS else self.project(target)
+            source = target if target in self.targets else self.project(target)
             if source is None:
                 raise ValueError("Projet non connecté")
             evidence = self.collector(source, Path(self.store.path).parent / "evidence" / mid)
@@ -310,6 +353,7 @@ class Missions:
                 "mission": m["id"],
                 "agent": agent,
                 "brief": m["brief"],
+                "project_chat": [dict(r) for r in db.execute("SELECT body FROM project_chat WHERE project=? ORDER BY id DESC LIMIT 8", (context["target"],))][::-1] if context else [],
                 "previous": list(reversed(prior)),
                 "ordinal": m["calls"] + 1,
                 "max_calls": m["max_calls"],

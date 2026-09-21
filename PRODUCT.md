@@ -31,3 +31,11 @@ Page marketing qui repousse le travail sous la ligne de flottaison ; tableau de 
 ## Accessibility & Inclusion
 
 Viser WCAG AA : contraste lisible, libellés explicites, focus visible, zones tactiles suffisantes, lecture structurée et annonces d’état sans dépendre de la couleur.
+# Distribution publique — 21 septembre 2026
+
+Agora s’adresse à toute personne souhaitant faire collaborer ses propres agents
+sur une idée, un projet, une base de code ou une URL. La discussion explique le
+besoin et nourrit les missions. Le logiciel est distribué sous licence MIT ; les
+accès aux fournisseurs et leurs éventuels coûts appartiennent à chaque opérateur.
+Les références historiques à l’installation du mainteneur ci-dessous ne sont pas
+des restrictions de périmètre du produit. Une instance neuve démarre vide.

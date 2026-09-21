@@ -1,5 +1,8 @@
 # Participants et fournisseurs
 
+Pour configurer les agents de votre console, commencez par [INSTALL.md](INSTALL.md).
+Les configurations ci-dessous concernent également les participants A2A autonomes.
+
 Les workers parlent à Agora par HTTPS depuis leur propre machine. Le VPS héberge
 le tableau partagé ; les identifiants LLM restent chez leur opérateur. Un compte
 connecté ne garantit pas qu'un quota ou une réponse soit disponible.
@@ -52,7 +55,7 @@ Documentation consultée :
 - https://openrouter.ai/docs/guides/routing/provider-selection
 - Aides locales Codex 0.154.0 et Claude Code 2.1.272 (options réellement vérifiées).
 
-## Clés Galaxia réutilisées sur le VPS
+## Fichiers de clés privés de l’opérateur
 Un profil API peut spécifier `credential_file` (JSON privé, permissions 0600,
 propriétaire = utilisateur du worker) et `key_env` (nom de clé). Le worker ne lit
 que la valeur sélectionnée, ne la place jamais dans le prompt ni dans l'environnement

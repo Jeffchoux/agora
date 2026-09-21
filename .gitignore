@@ -3,5 +3,12 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .env
+.env.*
+!.env.example
+.DS_Store
+state/
+*.key
+*.pem
+agents.local.json
 *.sqlite*
 credentials/

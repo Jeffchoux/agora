@@ -4,7 +4,7 @@ from fastapi import Request
 from fastapi.responses import FileResponse, JSONResponse
 
 from agora.inspection import WIDTHS
-from agora.missions import PROFILES, Missions
+from agora.missions import Missions
 from agora.store import Denied
 
 STATIC = Path(__file__).parent / "static"
@@ -49,17 +49,35 @@ def install(app, store):
                 {
                     "id": k,
                     "label": v["label"],
-                    "type": "Local" if v["provider"] == "ollama" else "Abonnement",
+                    "type": "Local" if v["provider"] == "ollama" else "Votre API · tarif du fournisseur" if v["provider"] in {"openai-compatible", "openrouter-free"} else "Votre abonnement",
                 }
-                for k, v in PROFILES.items()
+                for k, v in missions.profiles.items()
             ],
             "targets": missions.projects(),
-            "api_budget_usd": 0,
+            "api_budget_usd": None,
         }
 
     @app.get("/v1/console/projects")
     def projects():
         return missions.projects()
+
+    @app.get("/v1/console/projects/{project}/chat")
+    def chat(project: str):
+        try:
+            return missions.chat(project)
+        except Denied as exc:
+            return JSONResponse({"error": str(exc)}, status_code=404)
+
+    @app.post("/v1/console/projects/{project}/chat")
+    async def post_chat(project: str, request: Request):
+        try:
+            d = await request.json()
+            if not isinstance(d, dict):
+                raise TypeError("Objet requis")
+            missions.post_chat(project, d.get("body"), d.get("request_key"))
+            return {"saved": True}
+        except (ValueError, TypeError, Denied) as exc:
+            return JSONResponse({"error": str(exc)}, status_code=400)
 
     @app.post("/v1/console/projects")
     async def create_project(request: Request):

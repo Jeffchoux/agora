@@ -9,6 +9,7 @@ Group=galaxia
 WorkingDirectory=/home/galaxia/agora/current
 ExecStart=/home/galaxia/agora/current/.venv/bin/python -m agora.mission_runner
 Environment=AGORA_DB=/home/galaxia/.local/share/agora/agora.sqlite
+Environment=AGORA_LEGACY_INSTALLATION=1
 Environment=PATH=/home/galaxia/.local/bin:/usr/local/bin:/usr/bin:/bin
 UMask=0077
 Restart=on-failure

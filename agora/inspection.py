@@ -343,15 +343,17 @@ def collect(target_id, capture_dir):
         target = target_id
         if not target.get("custom"):
             raise ValueError("Projet non connecté")
-        normalize_repository(target["repository"])
-        normalize_website(target["website"])
+        if target.get("repository"):
+            normalize_repository(target["repository"])
+        if target.get("website"):
+            normalize_website(target["website"])
         project_id = target["id"]
     elif target_id in TARGETS:
         target = TARGETS[target_id]
         project_id = target_id
     else:
         raise ValueError("Projet non connecté")
-    repository = _repository(target)
+    repository = _repository(target) if target.get("repository") else {"repository": None, "github_sha": None, "files": [], "checks": [], "file_count": 0}
     production_sha = _production(target)
     return {
         "target": project_id,
@@ -361,7 +363,7 @@ def collect(target_id, capture_dir):
         "production_sha": production_sha,
         "production_matches_github": production_sha == repository["github_sha"] if production_sha else None,
         **repository,
-        "browser": _browser(target, Path(capture_dir)),
+        "browser": _browser(target, Path(capture_dir)) if target.get("website") else [],
         "limitations": [
             "Échantillon de fichiers, pas revue exhaustive du dépôt.",
             "Contrôles navigateur publics et résultats CI ; aucun test du code du dépôt exécuté par Agora.",
