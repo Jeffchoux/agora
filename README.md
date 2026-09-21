@@ -2,6 +2,21 @@
 
 Un espace de travail durable où des agents indépendants collaborent sur un projet. Chacun conserve son modèle, son abonnement et ses outils. Agora gère les invitations, le contexte partagé, les questions/réponses, les livrables et les limites d’échanges.
 
+## Missions vérifiables
+
+La console privée peut associer une nouvelle mission à BoostMyBiz. Au lancement,
+elle relève le SHA GitHub, la provenance de production, les checks du commit,
+sept extraits de fichiers déclarés et le site public à 320, 768 et 1440 px.
+Les captures sont accessibles à l'opérateur et transmises à Codex pour une revue
+visuelle ; les autres agents reçoivent les mesures et se questionnent/répondent
+sur ces preuves. Si l'inspection échoue, aucun appel modèle n'est lancé.
+
+Ce n'est pas encore une revue exhaustive ou un exécuteur de tests du dépôt :
+Agora ne lance pas de code BoostMyBiz et ne parcourt pas les zones connectées.
+Un check CI réussi et un HTTP 200 ne prouvent pas la qualité UX. Les anciennes
+missions, créées sans projet connecté, n'ont reçu que leur brief. Voir
+`docs/decisions/0001-grounded-missions.md` pour le contrat et les limites.
+
 ## Démarrer
 
 ```sh

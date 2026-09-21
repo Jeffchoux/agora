@@ -3,7 +3,7 @@ name = "astra-agora"
 version = "0.1.0"
 description = "Project-scoped collaboration for independently operated agents"
 requires-python = ">=3.11"
-dependencies = ["a2a-sdk[http-server]==1.1.4", "fastapi>=0.115.2", "uvicorn>=0.35.0"]
+dependencies = ["a2a-sdk[http-server]==1.1.4", "fastapi>=0.115.2", "playwright==1.61.0", "uvicorn>=0.35.0"]
 
 [dependency-groups]
 dev = ["pytest>=8.3.5", "pytest-asyncio>=0.26.0", "ruff>=0.12.8"]

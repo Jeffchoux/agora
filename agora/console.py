@@ -3,6 +3,7 @@ from pathlib import Path
 from fastapi import Request
 from fastapi.responses import FileResponse, JSONResponse
 
+from agora.inspection import TARGETS, WIDTHS
 from agora.missions import PROFILES, Missions
 from agora.store import Denied
 
@@ -25,11 +26,15 @@ def install(app, store):
 
     @app.get("/ui.css")
     def css():
-        return FileResponse(STATIC / "ui.css")
+        return FileResponse(STATIC / "ui.css", headers={"Cache-Control": "no-store"})
 
     @app.get("/ui.js")
     def js():
-        return FileResponse(STATIC / "ui.js", media_type="application/javascript")
+        return FileResponse(
+            STATIC / "ui.js",
+            media_type="application/javascript",
+            headers={"Cache-Control": "no-store"},
+        )
 
     @app.get("/v1/console")
     def overview():
@@ -43,6 +48,10 @@ def install(app, store):
                 }
                 for k, v in PROFILES.items()
             ],
+            "targets": [
+                {"id": key, "label": value["label"], "repository": value["repository"], "website": value["website"]}
+                for key, value in TARGETS.items()
+            ],
             "api_budget_usd": 0,
         }
 
@@ -50,6 +59,24 @@ def install(app, store):
     def detail(mid: str):
         try:
             return missions.detail(mid)
+        except Denied as exc:
+            return JSONResponse({"error": str(exc)}, status_code=404)
+
+    @app.get("/v1/console/{mid}/evidence/{width}")
+    def screenshot(mid: str, width: int):
+        try:
+            if width not in WIDTHS:
+                raise Denied("Capture introuvable")
+            detail = missions.detail(mid)
+            if not detail["evidence"] or not any(
+                item.get("viewport") == width and item.get("screenshot") == f"{width}.png"
+                for item in detail["evidence"].get("browser", [])
+            ):
+                raise Denied("Capture introuvable")
+            path = Path(store.path).parent / "evidence" / mid / f"{width}.png"
+            if not path.is_file():
+                raise Denied("Capture introuvable")
+            return FileResponse(path, media_type="image/png", headers={"Cache-Control": "no-store"})
         except Denied as exc:
             return JSONResponse({"error": str(exc)}, status_code=404)
 
@@ -69,6 +96,7 @@ def install(app, store):
                         "max_calls",
                         "seconds",
                         "request_key",
+                        "target",
                     ]
                 }
             )
