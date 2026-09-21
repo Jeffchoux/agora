@@ -23,8 +23,10 @@ Le premier adaptateur est BoostMyBiz uniquement. Ni URL, ni commande, ni chemin
 de fichier fournis par un participant ne deviennent une cible d'inspection.
 Le collecteur exécute des commandes fixes de lecture GitHub ; il n'exécute
 aucun code du dépôt et n'envoie aucune contribution à un shell. Le navigateur
-charge uniquement le domaine enregistré, sans connexion ni soumission de
-formulaire. Aucun agent ne peut publier, fusionner ou déployer depuis Agora.
+charge le domaine enregistré et vérifie en GET un lien de repli public vers
+un chemin Postpilot précisément autorisé, sans connexion ni soumission de
+formulaire. La navigation par Tab et l'activation par Entrée sont relevées.
+Aucun agent ne peut publier, fusionner ou déployer depuis Agora.
 
 ## Alternatives écartées
 

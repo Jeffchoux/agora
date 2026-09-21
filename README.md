@@ -10,6 +10,9 @@ sept extraits de fichiers déclarés et le site public à 320, 768 et 1440 px.
 Les captures sont accessibles à l'opérateur et transmises à Codex pour une revue
 visuelle ; les autres agents reçoivent les mesures et se questionnent/répondent
 sur ces preuves. Si l'inspection échoue, aucun appel modèle n'est lancé.
+Le lien public de repli « Describe my project » est contrôlé par Tab, Entrée et par
+une requête GET limitée à son chemin Postpilot connu ; aucun formulaire n'est
+soumis. Les captures s'ouvrent dans la console sans fenêtre externe.
 
 Ce n'est pas encore une revue exhaustive ou un exécuteur de tests du dépôt :
 Agora ne lance pas de code BoostMyBiz et ne parcourt pas les zones connectées.

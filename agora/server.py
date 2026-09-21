@@ -84,6 +84,7 @@ class Guard:
         public = path in {
             "/",
             "/ui.css",
+            "/capture.css",
             "/ui.js",
             "/health",
             "/.well-known/agent-card.json",

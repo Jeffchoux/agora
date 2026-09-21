@@ -19,7 +19,7 @@ def install(app, store):
             STATIC / "index.html",
             headers={
                 "Cache-Control": "no-store",
-                "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
+                "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
                 "Referrer-Policy": "no-referrer",
             },
         )
@@ -27,6 +27,10 @@ def install(app, store):
     @app.get("/ui.css")
     def css():
         return FileResponse(STATIC / "ui.css", headers={"Cache-Control": "no-store"})
+
+    @app.get("/capture.css")
+    def capture_css():
+        return FileResponse(STATIC / "capture.css", headers={"Cache-Control": "no-store"})
 
     @app.get("/ui.js")
     def js():
