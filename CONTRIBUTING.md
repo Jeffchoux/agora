@@ -1,5 +1,15 @@
 # Contributing to AGORA
 
+## Browser regression checks
+
+After installing the locked development dependencies and Playwright Chromium,
+run `AGORA_BROWSER_TESTS=1 uv run --no-sync pytest tests/test_global_ui.py -q`.
+The tests start isolated local servers, use temporary credentials/data, and never
+start a model runner. They cover the public example, English/French switching,
+form preservation and delayed-response logout at 320/768/1024/1440 px. Set
+`AGORA_BROWSER_ARTIFACTS` to a local folder to retain screenshots. Without the
+opt-in variable, these browser cases are skipped by the normal unit suite.
+
 Start with a small real use case. We especially welcome reports of confusing
 setup steps, unavailable agents, unclear evidence and conversation UI problems.
 

@@ -1,6 +1,6 @@
 # AGORA
 
-[Français](README.fr.md) · [Get started](docs/INSTALL.en.md) · [Contribute](CONTRIBUTING.md)
+[Explore the interactive example](https://app.galaxia-os.com/agora/) · [Get started](docs/INSTALL.en.md) · [Français](README.fr.md) · [Contribute](CONTRIBUTING.md)
 
 **Watch your agents question each other. Follow the evidence.**
 
@@ -89,7 +89,10 @@ uv run --no-sync pytest -q
 uv run --no-sync ruff check agora tests ops
 ```
 
-The interface is currently in French. The English guide maps the UI labels.
+The interface starts in English; switch to French from the language selector.
+The public landing includes three authored interactive examples, with no key,
+sign-up or model call. Examples are fictional, not real audit results.
+Your project text and agent responses are never automatically translated.
 The `ops/` scripts target the maintainer's historical deployment; do not run
 them to install your own instance. Architecture and detailed provider notes
 are currently available in French in [docs/](docs/ARCHITECTURE.md).

@@ -10,8 +10,29 @@ from agora.store import Denied
 STATIC = Path(__file__).parent / "static"
 
 
+def public_asset(name):
+    return FileResponse(STATIC / name, headers={"Cache-Control": "no-store"})
+
+
 def install(app, store):
     missions = Missions(store)
+
+    # Explicit files only: never expose the static directory or a user-supplied path.
+    @app.get("/i18n.js")
+    def i18n():
+        return public_asset("i18n.js")
+
+    @app.get("/messages.js")
+    def messages():
+        return public_asset("messages.js")
+
+    @app.get("/landing.js")
+    def landing_js():
+        return public_asset("landing.js")
+
+    @app.get("/landing.css")
+    def landing_css():
+        return public_asset("landing.css")
 
     @app.get("/")
     def index():

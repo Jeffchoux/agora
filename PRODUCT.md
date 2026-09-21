@@ -6,7 +6,11 @@ product
 
 ## Users
 
-Jeff pilote plusieurs projets et veut passer de l’un à l’autre en indiquant pour chacun son dépôt GitHub, son URL publique et les précautions utiles. Il choisit les agents pour une mission puis veut comprendre rapidement ce qu’ils ont réellement vérifié, parfois sur un écran étroit, sans déchiffrer un journal technique avant la conclusion.
+Project owners and developers worldwide want to review a repository, inspect a
+website or challenge an idea using their own agents. A newcomer must understand
+the purpose and explore an honest example before encountering a private access
+key. A returning operator needs clear projects, budgets, answers and evidence,
+including on a narrow screen. The maintainer's projects are not product defaults.
 
 ## Product Purpose
 
@@ -14,7 +18,9 @@ Créer des projets réutilisables et suivre des missions bornées, où les agent
 
 ## Brand Personality
 
-Clair, exigeant, calme. Un atelier de travail privé, avec des décisions et preuves lisibles plutôt qu’une mise en scène de l’IA.
+Concrete, questioning and candid. An open-source collaboration workspace, not
+a claim that an autonomous team has already completed the user's work. Public
+discovery is separate from each installation's private operator console.
 
 ## Anti-references
 

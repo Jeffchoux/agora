@@ -1,57 +1,104 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Agora · Missions</title>
+  <meta name="description" content="Bring your own AI agents together to review a repository, inspect a website or challenge an idea. Follow their questions, answers and evidence. Free, open source and self-hosted.">
+  <title>Agora · Put your agents in conversation</title>
   <link rel="stylesheet" href="ui.css?v=20260921-projects">
   <link rel="stylesheet" href="capture.css?v=20260921-link-probe">
-  <script src="ui.js?v=20260921-projects" defer></script>
+  <link rel="stylesheet" href="landing.css?v=20260921-global">
+  <script src="i18n.js?v=20260921-global" defer></script>
+  <script src="messages.js?v=20260921-global" defer></script>
+  <script src="landing.js?v=20260921-global" defer></script>
+  <script src="ui.js?v=20260921-global" defer></script>
 </head>
 <body>
-  <header class="site-header"><a href="./" class="brand" aria-label="Agora, accueil"><span class="mark">a</span> agora <span class="beta">ATELIER</span></a><button id="logout" class="quiet" hidden>Se déconnecter</button></header>
+  <header class="site-header">
+    <a href="./" class="brand" aria-label="Agora, home" data-fr-aria-label="Agora, accueil"><span class="mark">a</span> agora <span class="beta">OPEN SOURCE</span></a>
+    <nav class="header-actions" aria-label="Main navigation" data-fr-aria-label="Navigation principale">
+      <button id="show-welcome" class="quiet" data-fr="Découvrir">Explore</button>
+      <a href="https://github.com/Jeffchoux/agora" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <label for="language" data-fr="Langue">Language</label><select id="language"><option value="en">English</option><option value="fr">Français</option></select>
+      <button id="back-workspace" class="quiet" hidden data-fr="Espace de travail">Workspace</button>
+      <button id="logout" class="quiet" hidden data-fr="Se déconnecter">Sign out</button>
+    </nav>
+  </header>
   <main>
     <div id="notice" role="status" aria-live="polite"></div>
-    <section id="login" class="panel login"><p class="eyebrow">ESPACE PRIVÉ</p><h1>Vos missions, leurs preuves.</h1><p>Ouvrez Agora pour examiner vos projets avec les agents.</p><form id="login-form"><label for="token">Clé d’accès</label><input id="token" type="password" autocomplete="off" required><button class="primary">Entrer dans Agora</button></form><label for="keyfile">Ou ouvrir votre fichier d’accès</label><input id="keyfile" type="file" accept=".key,.txt"></section>
+    <div id="welcome">
+      <section class="welcome-hero" aria-labelledby="welcome-title">
+        <div class="welcome-copy">
+          <p class="eyebrow" data-fr="VOS PROJETS. VOS AGENTS. VOTRE DÉCISION.">YOUR PROJECTS. YOUR AGENTS. YOUR CALL.</p>
+          <h1 id="welcome-title" data-fr="Ne demandez plus à une IA. Faites dialoguer une équipe.">Stop asking one AI. Start a conversation between them.</h1>
+          <p class="welcome-lead" data-fr="Un dépôt GitHub, un site ou une idée. Donnez l’objectif, choisissez vos agents et suivez leurs questions, leurs réponses et les preuves derrière leurs conclusions.">A GitHub repo, a website, or an idea. Share the goal, choose your agents, and follow their questions, answers and the evidence behind their conclusions.</p>
+          <div class="welcome-actions"><a href="#example" id="explore-example" class="primary action-link" data-fr="Explorer un exemple ↓">Explore an example ↓</a><a href="#get-started" class="quiet action-link" data-fr="Installer Agora">Get Agora</a></div>
+          <p class="welcome-note" data-fr="Exemple sans clé ni inscription. Logiciel gratuit et auto-hébergé. Vos modèles, vos quotas.">No key or sign-up for the example. Free, self-hosted software. Your models, your quotas.</p>
+        </div>
+        <section id="example" class="demo-workbench" aria-labelledby="demo-heading" tabindex="-1">
+          <div class="demo-topline"><span data-fr="EXEMPLE INTERACTIF">INTERACTIVE EXAMPLE</span><span class="demo-safe" data-fr="Aucun modèle appelé">No model calls</span></div>
+          <h2 id="demo-heading" data-fr="Que voulez-vous examiner ?">What do you want to investigate?</h2>
+          <div class="demo-scenarios" role="group" aria-label="Example scenario" data-fr-aria-label="Scénario d’exemple"><button type="button" data-scenario="repo" aria-pressed="true" data-fr="Un dépôt">A repository</button><button type="button" data-scenario="site" aria-pressed="false" data-fr="Un site">A website</button><button type="button" data-scenario="idea" aria-pressed="false" data-fr="Une idée">An idea</button></div>
+          <p id="demo-brief" class="demo-brief"></p>
+          <div class="demo-route"><span id="demo-from"></span><span class="demo-arrow">→</span><span id="demo-to"></span></div>
+          <div class="demo-reading" aria-live="polite" aria-atomic="true"><p id="demo-kind" class="eyebrow"></p><h3 id="demo-title"></h3><p id="demo-body"></p><p id="demo-proof" class="demo-proof"></p></div>
+          <div class="demo-controls"><button id="demo-prev" class="quiet" type="button" data-fr="← Précédent">← Previous</button><span id="demo-progress"></span><button id="demo-next" class="primary" type="button">Next response →</button></div>
+          <p class="demo-disclaimer" data-fr="Scénario fictif écrit pour expliquer le produit. Ni audit réel, ni réponse en direct.">An authored, fictional scenario to explain the product. Not a real audit or a live model response.</p>
+        </section>
+      </section>
+      <section class="outcomes" aria-labelledby="outcomes-heading">
+        <div><p class="eyebrow" data-fr="PAS UN CHAT DE PLUS">NOT ANOTHER CHAT WINDOW</p><h2 id="outcomes-heading" data-fr="Vous fixez l’objectif. Les agents confrontent leurs réponses.">You set the goal. The agents challenge the answers.</h2></div>
+        <ol class="workflow"><li><span>01</span><div><h3 data-fr="Apportez le contexte">Bring the context</h3><p data-fr="Expliquez le projet dans le chat. Ajoutez un dépôt, une URL ou aucun des deux. Gardez chaque projet séparé.">Explain the project in chat. Add a repository, a URL, or neither. Keep each project separate.</p></div></li><li><span>02</span><div><h3 data-fr="Choisissez votre équipe">Choose your team</h3><p data-fr="De un à quatre agents, avec vos modèles locaux, API ou CLI connectés. Fixez les limites avant de lancer.">One to four agents using your own local models, APIs or signed-in CLIs. Set limits before starting.</p></div></li><li><span>03</span><div><h3 data-fr="Examinez les désaccords">Inspect the disagreement</h3><p data-fr="Voyez qui questionne qui, ouvrez les contributions et exportez le rapport JSON. Les preuves et les limites restent visibles.">See who asks whom, open each contribution, and export the JSON report. Evidence and limitations stay visible.</p></div></li></ol>
+      </section>
+      <section id="get-started" class="start-section" aria-labelledby="start-heading">
+        <div><p class="eyebrow" data-fr="À VOUS DE JOUER">MAKE IT YOURS</p><h2 id="start-heading" data-fr="Votre Agora. Sur votre machine.">Your Agora. On your machine.</h2><p data-fr="Agora est un logiciel MIT à installer, pas un compte cloud partagé. Vous gardez vos projets et connectez vos propres accès aux modèles.">Agora is MIT-licensed software you install, not a shared cloud account. You keep your projects and connect your own model access.</p><a class="primary action-link install-guide" href="https://github.com/Jeffchoux/agora/blob/main/docs/INSTALL.en.md" target="_blank" rel="noopener noreferrer" data-fr="Ouvrir le guide d’installation ↗">Open the setup guide ↗</a><p class="hint" data-fr="Python 3.11+, uv et Git. Windows/WSL2 : non vérifié.">Python 3.11+, uv and Git. Windows/WSL2: not verified.</p></div>
+        <div class="setup-preview"><p class="eyebrow" data-fr="LE DÉBUT DE L’INSTALLATION">START WITH THE SOURCE</p><pre><code>git clone https://github.com/Jeffchoux/agora.git
+cd agora
+uv sync --locked --no-build
+uv run --no-sync python -m agora init</code></pre><p data-fr="Puis connectez vos agents et démarrez la console et le runner. Le guide explique chaque étape. Aucun modèle n’est appelé à l’installation.">Then connect your agents and start the console and runner. The guide walks through each step. Installation calls no models.</p><button id="show-login" class="quiet" data-fr="Déjà installé ? Ouvrir cette console">Already installed? Open this workspace</button></div>
+      </section>
+      <section class="honest-limits" aria-labelledby="limits-heading"><h2 id="limits-heading" data-fr="Ce qu’Agora fait aujourd’hui, et ce qu’il ne fait pas.">What Agora does today. And what it doesn’t.</h2><p data-fr="Il collecte des extraits de code, les checks GitHub et des observations navigateur, puis les partage avec les agents. Il n’exécute pas les tests de votre dépôt, ne modifie pas votre code et ne garantit pas la justesse des réponses.">It gathers code samples, GitHub checks and browser observations, then shares them with the agents. It does not run your repository’s tests, edit your code, or guarantee that an agent is right.</p><p data-fr="Le logiciel est gratuit. Les API peuvent être facturées ; les abonnements ont leurs propres quotas. Aucun accès du mainteneur n’est inclus.">The software is free. Provider APIs may charge; subscriptions have their own quotas. No maintainer credentials or subscriptions are included.</p></section>
+    </div>
+    <section id="login" class="panel login" hidden><p class="eyebrow" data-fr="ESPACE PRIVÉ">PRIVATE WORKSPACE</p><h1 data-fr="Ouvrir votre espace de travail">Open your workspace</h1><p data-fr="Utilisez la clé opérateur de cette installation Agora, pas une clé API de fournisseur. Elle donne accès à tous les projets de cette instance.">Use this Agora installation’s operator key, not a provider API key. It grants access to every project on this instance.</p><form id="login-form"><label for="token" data-fr="Clé opérateur">Operator key</label><input id="token" type="password" autocomplete="off" required><button class="primary" data-fr="Entrer dans Agora">Open Agora</button></form><label for="keyfile" data-fr="Ou ouvrir votre fichier d’accès">Or open your access-key file</label><input id="keyfile" type="file" accept=".key,.txt"><p class="hint"><span data-fr="Pas encore d’installation ?">No installation yet?</span> <a class="install-guide" href="https://github.com/Jeffchoux/agora/blob/main/docs/INSTALL.en.md" target="_blank" rel="noopener noreferrer" data-fr="Installez votre propre Agora">Set up your own Agora</a>.</p></section>
     <div id="workspace" hidden>
-      <div class="workspace-title"><div><p class="eyebrow">VOTRE ESPACE DE TRAVAIL</p><h1>Les missions</h1></div><button id="new-mission" class="primary">Nouvelle vérification</button></div>
-      <section class="project-toolbar" aria-label="Choisir un projet"><div><label for="project-filter">Projet affiché</label><select id="project-filter"></select></div><button id="new-project" class="quiet">Ajouter un projet</button><p id="project-summary" class="hint"></p></section>
-      <details id="project-setup" class="panel project-setup"><summary>Ajouter un projet à Agora</summary>
-        <p class="hint">Commencez par un projet ou une idée. Vous pouvez joindre un dépôt GitHub, un site, ou simplement expliquer votre besoin. L’ajout n’appelle aucun agent.</p>
+      <div class="workspace-title"><div><p class="eyebrow" data-fr="VOTRE ESPACE DE TRAVAIL">YOUR WORKSPACE</p><h1 data-fr="Les missions">Missions</h1></div><button id="new-mission" class="primary" data-fr="Nouvelle vérification">New review</button></div>
+      <section class="project-toolbar" aria-label="Choose a project" data-fr-aria-label="Choisir un projet"><div><label for="project-filter" data-fr="Projet affiché">Current project</label><select id="project-filter"></select></div><button id="new-project" class="quiet" data-fr="Ajouter un projet">Add a project</button><p id="project-summary" class="hint"></p></section>
+      <details id="project-setup" class="panel project-setup"><summary data-fr="Ajouter un projet à Agora">Add a project to Agora</summary>
+        <p class="hint" data-fr="Commencez par un projet ou une idée. Vous pouvez joindre un dépôt GitHub, un site, ou simplement expliquer votre besoin. L’ajout n’appelle aucun agent.">Start with a project or an idea. Add a GitHub repository, a website, or simply describe what you need. Creating a project does not call any agent.</p>
         <form id="project-form">
-          <div class="project-fields"><div><label for="project-label">Nom du projet</label><input id="project-label" required maxlength="80" placeholder="Ex. Mon prochain projet"></div><div><label for="project-repository">Dépôt GitHub (facultatif)</label><input id="project-repository" maxlength="250" placeholder="https://github.com/compte/depot" autocomplete="url"></div><div><label for="project-website">URL du site public (facultatif)</label><input id="project-website" type="url" maxlength="2048" placeholder="https://exemple.com/" autocomplete="url"></div></div>
-          <label for="project-notes">Autres détails utiles (facultatif)</label><textarea id="project-notes" maxlength="2000" rows="3" placeholder="Parcours à examiner, public visé, précautions… N’indiquez pas de clé API."></textarea>
-          <p class="hint">HTTPS public uniquement. Les dépôts privés doivent déjà être accessibles au compte GitHub du serveur. Pour un nouveau projet, la correspondance entre le site et le commit GitHub n’est pas certifiée.</p>
-          <button class="primary" id="save-project">Enregistrer le projet</button>
+          <div class="project-fields"><div><label for="project-label" data-fr="Nom du projet">Project name</label><input id="project-label" required maxlength="80" placeholder="e.g. My next project" data-fr-placeholder="Ex. Mon prochain projet"></div><div><label for="project-repository" data-fr="Dépôt GitHub (facultatif)">GitHub repository (optional)</label><input id="project-repository" maxlength="250" placeholder="https://github.com/owner/repo" data-fr-placeholder="https://github.com/compte/depot" autocomplete="url"></div><div><label for="project-website" data-fr="URL du site public (facultatif)">Public website URL (optional)</label><input id="project-website" type="url" maxlength="2048" placeholder="https://example.com/" data-fr-placeholder="https://exemple.com/" autocomplete="url"></div></div>
+          <label for="project-notes" data-fr="Autres détails utiles (facultatif)">Other useful details (optional)</label><textarea id="project-notes" maxlength="2000" rows="3" placeholder="User journeys, audience, precautions… Do not include API keys." data-fr-placeholder="Parcours à examiner, public visé, précautions… N’indiquez pas de clé API."></textarea>
+          <p class="hint" data-fr="HTTPS public uniquement. Les dépôts privés doivent déjà être accessibles au compte GitHub du serveur. Pour un nouveau projet, la correspondance entre le site et le commit GitHub n’est pas certifiée.">Public HTTPS only. Private repositories must already be accessible to the server’s GitHub account. For a new project, Agora does not verify that the website matches the GitHub commit.</p>
+          <button class="primary" id="save-project" data-fr="Enregistrer le projet">Save project</button>
         </form>
       </details>
-      <section id="project-chat" class="panel" hidden aria-label="Discussion du projet">
-        <h2>Parlons du projet</h2>
-        <p class="hint">Expliquez votre idée, vos objectifs et vos contraintes. Les huit derniers messages complètent le contexte des agents (extraits de 1 500 caractères maximum chacun). Enregistrer un message ne consomme aucun appel.</p>
+      <section id="project-chat" class="panel" hidden aria-label="Project discussion" data-fr-aria-label="Discussion du projet">
+        <h2 data-fr="Parlons du projet">Tell us about your project</h2>
+        <p class="hint" data-fr="Expliquez votre idée, vos objectifs et vos contraintes. Les huit derniers messages complètent le contexte des agents (extraits de 1 500 caractères maximum chacun). Enregistrer un message ne consomme aucun appel.">Describe your idea, goals and constraints. The last eight messages provide context for the agents, up to 1,500 characters each. Saving a message does not call any agent.</p>
         <div id="chat-messages" aria-live="polite"></div>
-        <form id="chat-form"><label for="chat-body">Votre message</label><textarea id="chat-body" required maxlength="4000" rows="3" placeholder="Ce que je veux construire, pour qui, et ce que les agents doivent éclaircir…"></textarea><button id="save-message" class="quiet">Ajouter à la discussion</button> <button id="ask-agents" type="button" class="primary">Préparer une réponse des agents</button></form>
+        <form id="chat-form"><label for="chat-body" data-fr="Votre message">Your message</label><textarea id="chat-body" required maxlength="4000" rows="3" placeholder="What I want to build, who it is for, and what the agents should clarify…" data-fr-placeholder="Ce que je veux construire, pour qui, et ce que les agents doivent éclaircir…"></textarea><button id="save-message" class="quiet" data-fr="Ajouter à la discussion">Add to discussion</button> <button id="ask-agents" type="button" class="primary" data-fr="Préparer une réponse des agents">Prepare an agent response</button></form>
       </section>
-      <details class="panel"><summary>Mes connexions d’agents</summary><p class="hint">Cette installation utilise vos propres accès. Les agents configurés apparaissent dans le choix ci-dessous. Pour en ajouter, suivez le <a href="https://github.com/Jeffchoux/agora/blob/main/docs/INSTALL.md" target="_blank" rel="noopener noreferrer">guide de connexion</a>. Les clés restent sur votre machine ou votre serveur. Un abonnement n’est pas une clé API ; les tarifs et quotas dépendent de votre fournisseur.</p><p id="connections-status" class="hint"></p></details>
+      <details class="panel"><summary data-fr="Mes connexions d’agents">My agent connections</summary><p class="hint"><span data-fr="Cette installation utilise vos propres accès. Les agents configurés apparaissent dans le choix ci-dessous. Pour en ajouter, suivez le">This installation uses your own accounts. Configured agents appear in the selection below. To add agents, follow the</span> <a class="install-guide" href="https://github.com/Jeffchoux/agora/blob/main/docs/INSTALL.en.md" target="_blank" rel="noopener noreferrer" data-fr="guide de connexion">connection guide</a><span data-fr=". Les clés restent sur votre machine ou votre serveur. Un abonnement n’est pas une clé API ; les tarifs et quotas dépendent de votre fournisseur.">. Keys stay on your machine or server. A subscription is not an API key; pricing and quotas depend on your provider.</span></p><p id="connections-status" class="hint"></p></details>
       <div class="workspace-grid">
-        <section id="detail" class="panel detail" hidden aria-label="Mission sélectionnée"></section>
+        <section id="detail" class="panel detail" hidden aria-label="Selected mission" data-fr-aria-label="Mission sélectionnée"></section>
         <aside class="sidebar">
-          <section class="history"><h2>Missions récentes</h2><div id="mission-list"></div></section>
-          <details id="compose" class="panel compose"><summary>Nouvelle vérification <span aria-hidden="true">＋</span></summary>
-            <p class="hint">Les agents utilisent votre discussion et les sources fournies. Avec un dépôt : lecture de code et des checks GitHub. Avec une URL : trois vues du site. Aucun code du projet n’est exécuté.</p>
+          <section class="history"><h2 data-fr="Missions récentes">Recent missions</h2><div id="mission-list"></div></section>
+          <details id="compose" class="panel compose"><summary><span data-fr="Nouvelle vérification">New review</span> <span aria-hidden="true">＋</span></summary>
+            <p class="hint" data-fr="Les agents utilisent votre discussion et les sources fournies. Avec un dépôt : lecture de code et des checks GitHub. Avec une URL : trois vues du site. Aucun code du projet n’est exécuté.">Agents use your discussion and the supplied sources. Add a repository to inspect code and GitHub checks, or a URL for three website views. No project code is executed.</p>
             <form id="mission-form">
-              <label for="target">Projet connecté</label><select id="target" required></select>
-              <label for="title">Nom de la mission</label><input id="title" required maxlength="100" placeholder="Ex. Vérifier le parcours d’accueil">
-              <label for="brief">Question aux agents</label><textarea id="brief" required minlength="10" maxlength="8000" rows="5" placeholder="Que faut-il vérifier dans le code, le site et le parcours utilisateur ?"></textarea>
-              <fieldset><legend>Agents à faire travailler (1 à 4)</legend><div id="agents" class="agents"></div></fieldset>
-              <details class="advanced"><summary>Limites de la mission</summary><div class="limits"><div><label for="calls">Appels maximum</label><input id="calls" type="number" min="1" max="12" value="4" required></div><div><label for="duration">Durée maximum</label><select id="duration"><option value="300">5 minutes</option><option value="600" selected>10 minutes</option><option value="1200">20 minutes</option><option value="1800">30 minutes</option></select></div></div></details>
-              <p class="hint">4 appels au plus, 10 minutes par défaut. Chaque tentative compte, même en cas d’échec. Les API peuvent être gratuites ou facturées selon votre compte ; Agora ne garantit pas leur gratuité et ne fournit aucun crédit. Les agents ne modifient pas le code.</p>
-              <button class="primary" id="create">Lancer la vérification</button>
+              <label for="target" data-fr="Projet connecté">Connected project</label><select id="target" required></select>
+              <label for="title" data-fr="Nom de la mission">Mission name</label><input id="title" required maxlength="100" placeholder="e.g. Review the onboarding journey" data-fr-placeholder="Ex. Vérifier le parcours d’accueil">
+              <label for="brief" data-fr="Question aux agents">Question for the agents</label><textarea id="brief" required minlength="10" maxlength="8000" rows="5" placeholder="What should the agents check in the code, website and user journey?" data-fr-placeholder="Que faut-il vérifier dans le code, le site et le parcours utilisateur ?"></textarea>
+              <fieldset><legend data-fr="Agents à faire travailler (1 à 4)">Choose your agents (1 to 4)</legend><div id="agents" class="agents"></div></fieldset>
+              <details class="advanced"><summary data-fr="Limites de la mission">Mission limits</summary><div class="limits"><div><label for="calls" data-fr="Appels maximum">Maximum calls</label><input id="calls" type="number" min="1" max="12" value="4" required></div><div><label for="duration" data-fr="Durée maximum">Maximum duration</label><select id="duration"><option value="300">5 minutes</option><option value="600" selected>10 minutes</option><option value="1200">20 minutes</option><option value="1800">30 minutes</option></select></div></div></details>
+              <p class="hint" data-fr="4 appels au plus, 10 minutes par défaut. Chaque tentative compte, même en cas d’échec. Les API peuvent être gratuites ou facturées selon votre compte ; Agora ne garantit pas leur gratuité et ne fournit aucun crédit. Les agents ne modifient pas le code.">Defaults: up to 4 calls and 10 minutes. Every attempt counts, including failures. APIs may be free or paid depending on your account; Agora does not guarantee free access or provide credits. Agents do not modify code.</p>
+              <button class="primary" id="create" data-fr="Lancer la vérification">Start review</button>
             </form>
           </details>
         </aside>
       </div>
     </div>
   </main>
-  <footer>Agora <span>Les agents proposent. Vous gardez la décision.</span></footer>
+  <footer>Agora <span data-fr="Les agents proposent. Vous gardez la décision.">Agents propose. You decide.</span></footer>
 </body>
 </html>
