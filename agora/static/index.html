@@ -1,7 +1,39 @@
-<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Agora — L’atelier des agents</title><link rel="stylesheet" href="ui.css?v=20260921-grounded"><link rel="stylesheet" href="capture.css?v=20260921-link-probe"><script src="ui.js?v=20260921-link-probe" defer></script></head><body>
-<header><a href="./" class="brand" aria-label="Agora accueil"><span class="mark">a</span> agora<span class="beta">ATELIER</span></a><button id="logout" class="quiet" hidden>Se déconnecter</button></header>
-<main><section class="intro"><p class="eyebrow">UNE IDÉE. PLUSIEURS REGARDS.</p><h1>Faites avancer votre projet,<br><em>ensemble.</em></h1><p class="lead">Un brief commun, des agents complémentaires et des contributions que vous gardez sous les yeux.</p></section>
-<div id="notice" role="status" aria-live="polite"></div>
-<section id="login" class="panel narrow"><p class="eyebrow">VOTRE ESPACE PRIVÉ</p><h2>Ouvrir l’atelier</h2><p>Utilisez votre clé d’accès Agora. Elle protège les projets et le lancement des agents.</p><form id="login-form"><label for="token">Clé d’accès</label><input id="token" type="password" autocomplete="off" required><button class="primary">Entrer dans Agora <span aria-hidden="true">↗</span></button></form><label for="keyfile">Ou ouvrir votre fichier d’accès</label><input id="keyfile" type="file" accept=".key,.txt"></section>
-<div id="workspace" hidden><div class="workspace-title"><h2>Votre atelier</h2><span class="pill">API payantes : 0 $ autorisé</span></div><div class="layout"><section class="panel compose"><p class="eyebrow">01 — LE POINT DE DÉPART</p><h2>Confier une mission</h2><form id="mission-form"><label for="title">Nom de la mission</label><input id="title" required maxlength="100" placeholder="Ex. Vérifier le parcours d’accueil"><label for="target">Projet connecté</label><select id="target" required></select><p class="hint">Au lancement, Agora relève le commit GitHub, la production, la CI et trois vues du site. Les agents reçoivent ces preuves, pas un simple lien à deviner.</p><label for="brief">Ce que vous voulez vérifier</label><textarea id="brief" required minlength="10" maxlength="8000" rows="6" placeholder="Le parcours, le code, les tests ou les questions à trancher…"></textarea><fieldset><legend>L’équipe · 1 à 4 agents</legend><div id="agents" class="agents"></div></fieldset><div class="limits"><div><label for="calls">Appels maximum</label><input id="calls" type="number" min="1" max="12" value="4" required></div><div><label for="duration">Durée maximum</label><select id="duration"><option value="300">5 minutes</option><option value="600" selected>10 minutes</option><option value="1200">20 minutes</option><option value="1800">30 minutes</option></select></div></div><p class="hint">Chaque tentative consomme un appel, même en cas d’échec. Les agents comparent les preuves, posent des questions et répondent ; ils ne modifient pas le code. Aucun achat de crédits.</p><button class="primary" id="create">Préparer la mission <span aria-hidden="true">↗</span></button></form></section><section class="missions"><p class="eyebrow">02 — LES PROJETS EN MOUVEMENT</p><div id="mission-list"></div></section></div><section id="detail" class="panel detail" hidden aria-label="Détails de la mission"></section></div>
-<footer>Agora <span>Les agents proposent. Vous gardez la décision.</span></footer></main></body></html>
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agora · Missions</title>
+  <link rel="stylesheet" href="ui.css?v=20260921-operator">
+  <link rel="stylesheet" href="capture.css?v=20260921-link-probe">
+  <script src="ui.js?v=20260921-operator" defer></script>
+</head>
+<body>
+  <header class="site-header"><a href="./" class="brand" aria-label="Agora, accueil"><span class="mark">a</span> agora <span class="beta">ATELIER</span></a><button id="logout" class="quiet" hidden>Se déconnecter</button></header>
+  <main>
+    <div id="notice" role="status" aria-live="polite"></div>
+    <section id="login" class="panel login"><p class="eyebrow">ESPACE PRIVÉ</p><h1>Vos missions, leurs preuves.</h1><p>Ouvrez Agora pour examiner vos projets avec les agents.</p><form id="login-form"><label for="token">Clé d’accès</label><input id="token" type="password" autocomplete="off" required><button class="primary">Entrer dans Agora</button></form><label for="keyfile">Ou ouvrir votre fichier d’accès</label><input id="keyfile" type="file" accept=".key,.txt"></section>
+    <div id="workspace" hidden>
+      <div class="workspace-title"><div><p class="eyebrow">VOTRE ESPACE DE TRAVAIL</p><h1>Les missions</h1></div><button id="new-mission" class="primary">Nouvelle vérification</button></div>
+      <div class="workspace-grid">
+        <section id="detail" class="panel detail" hidden aria-label="Mission sélectionnée"></section>
+        <aside class="sidebar">
+          <section class="history"><h2>Missions récentes</h2><div id="mission-list"></div></section>
+          <details id="compose" class="panel compose"><summary>Nouvelle vérification <span aria-hidden="true">＋</span></summary>
+            <p class="hint">Agora inspecte le commit GitHub, la provenance en production, la CI et trois vues du site avant d’interroger les agents. Aucun code du projet n’est exécuté.</p>
+            <form id="mission-form">
+              <label for="target">Projet connecté</label><select id="target" required></select>
+              <label for="title">Nom de la mission</label><input id="title" required maxlength="100" placeholder="Ex. Vérifier le parcours d’accueil">
+              <label for="brief">Question aux agents</label><textarea id="brief" required minlength="10" maxlength="8000" rows="5" placeholder="Que faut-il vérifier dans le code, le site et le parcours utilisateur ?"></textarea>
+              <details class="advanced"><summary>Agents et limites</summary><fieldset><legend>Agents (1 à 4)</legend><div id="agents" class="agents"></div></fieldset><div class="limits"><div><label for="calls">Appels maximum</label><input id="calls" type="number" min="1" max="12" value="4" required></div><div><label for="duration">Durée maximum</label><select id="duration"><option value="300">5 minutes</option><option value="600" selected>10 minutes</option><option value="1200">20 minutes</option><option value="1800">30 minutes</option></select></div></div></details>
+              <p class="hint">Par défaut : Codex (abonnement) et Qwen Coder (local), 4 appels au plus, 10 minutes. Chaque tentative compte, même en cas d’échec. Aucune API facturée n’est autorisée ; abonnement et ressources locales restent utilisés. Les agents ne modifient pas le code.</p>
+              <button class="primary" id="create">Lancer la vérification</button>
+            </form>
+          </details>
+        </aside>
+      </div>
+    </div>
+  </main>
+  <footer>Agora <span>Les agents proposent. Vous gardez la décision.</span></footer>
+</body>
+</html>
