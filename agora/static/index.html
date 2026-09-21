@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Agora · Missions</title>
-  <link rel="stylesheet" href="ui.css?v=20260921-operator">
+  <link rel="stylesheet" href="ui.css?v=20260921-projects">
   <link rel="stylesheet" href="capture.css?v=20260921-link-probe">
-  <script src="ui.js?v=20260921-operator" defer></script>
+  <script src="ui.js?v=20260921-projects" defer></script>
 </head>
 <body>
   <header class="site-header"><a href="./" class="brand" aria-label="Agora, accueil"><span class="mark">a</span> agora <span class="beta">ATELIER</span></a><button id="logout" class="quiet" hidden>Se déconnecter</button></header>
@@ -15,17 +15,28 @@
     <section id="login" class="panel login"><p class="eyebrow">ESPACE PRIVÉ</p><h1>Vos missions, leurs preuves.</h1><p>Ouvrez Agora pour examiner vos projets avec les agents.</p><form id="login-form"><label for="token">Clé d’accès</label><input id="token" type="password" autocomplete="off" required><button class="primary">Entrer dans Agora</button></form><label for="keyfile">Ou ouvrir votre fichier d’accès</label><input id="keyfile" type="file" accept=".key,.txt"></section>
     <div id="workspace" hidden>
       <div class="workspace-title"><div><p class="eyebrow">VOTRE ESPACE DE TRAVAIL</p><h1>Les missions</h1></div><button id="new-mission" class="primary">Nouvelle vérification</button></div>
+      <section class="project-toolbar" aria-label="Choisir un projet"><div><label for="project-filter">Projet affiché</label><select id="project-filter"></select></div><button id="new-project" class="quiet">Ajouter un projet</button><p id="project-summary" class="hint"></p></section>
+      <details id="project-setup" class="panel project-setup"><summary>Ajouter un projet à Agora</summary>
+        <p class="hint">Indiquez le dépôt GitHub et l’URL publique du site. L’ajout n’appelle aucun agent ; une mission ne part qu’après votre clic sur « Lancer ».</p>
+        <form id="project-form">
+          <div class="project-fields"><div><label for="project-label">Nom du projet</label><input id="project-label" required maxlength="80" placeholder="Ex. Ricky Club"></div><div><label for="project-repository">Dépôt GitHub</label><input id="project-repository" required maxlength="250" placeholder="https://github.com/compte/depot" autocomplete="url"></div><div><label for="project-website">URL du site public</label><input id="project-website" required type="url" maxlength="2048" placeholder="https://exemple.com/" autocomplete="url"></div></div>
+          <label for="project-notes">Autres détails utiles (facultatif)</label><textarea id="project-notes" maxlength="2000" rows="3" placeholder="Parcours à examiner, public visé, précautions… N’indiquez pas de clé API."></textarea>
+          <p class="hint">HTTPS public uniquement. Les dépôts privés doivent déjà être accessibles au compte GitHub du serveur. Pour un nouveau projet, la correspondance entre le site et le commit GitHub n’est pas certifiée.</p>
+          <button class="primary" id="save-project">Enregistrer le projet</button>
+        </form>
+      </details>
       <div class="workspace-grid">
         <section id="detail" class="panel detail" hidden aria-label="Mission sélectionnée"></section>
         <aside class="sidebar">
           <section class="history"><h2>Missions récentes</h2><div id="mission-list"></div></section>
           <details id="compose" class="panel compose"><summary>Nouvelle vérification <span aria-hidden="true">＋</span></summary>
-            <p class="hint">Agora inspecte le commit GitHub, la provenance en production, la CI et trois vues du site avant d’interroger les agents. Aucun code du projet n’est exécuté.</p>
+            <p class="hint">Agora inspecte le commit GitHub, les checks et trois vues du site avant d’interroger les agents. La provenance de production n’est comparée que si elle est configurée. Aucun code du projet n’est exécuté.</p>
             <form id="mission-form">
               <label for="target">Projet connecté</label><select id="target" required></select>
               <label for="title">Nom de la mission</label><input id="title" required maxlength="100" placeholder="Ex. Vérifier le parcours d’accueil">
               <label for="brief">Question aux agents</label><textarea id="brief" required minlength="10" maxlength="8000" rows="5" placeholder="Que faut-il vérifier dans le code, le site et le parcours utilisateur ?"></textarea>
-              <details class="advanced"><summary>Agents et limites</summary><fieldset><legend>Agents (1 à 4)</legend><div id="agents" class="agents"></div></fieldset><div class="limits"><div><label for="calls">Appels maximum</label><input id="calls" type="number" min="1" max="12" value="4" required></div><div><label for="duration">Durée maximum</label><select id="duration"><option value="300">5 minutes</option><option value="600" selected>10 minutes</option><option value="1200">20 minutes</option><option value="1800">30 minutes</option></select></div></div></details>
+              <fieldset><legend>Agents à faire travailler (1 à 4)</legend><div id="agents" class="agents"></div></fieldset>
+              <details class="advanced"><summary>Limites de la mission</summary><div class="limits"><div><label for="calls">Appels maximum</label><input id="calls" type="number" min="1" max="12" value="4" required></div><div><label for="duration">Durée maximum</label><select id="duration"><option value="300">5 minutes</option><option value="600" selected>10 minutes</option><option value="1200">20 minutes</option><option value="1800">30 minutes</option></select></div></div></details>
               <p class="hint">Par défaut : Codex (abonnement) et Qwen Coder (local), 4 appels au plus, 10 minutes. Chaque tentative compte, même en cas d’échec. Aucune API facturée n’est autorisée ; abonnement et ressources locales restent utilisés. Les agents ne modifient pas le code.</p>
               <button class="primary" id="create">Lancer la vérification</button>
             </form>

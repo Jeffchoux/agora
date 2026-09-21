@@ -5,7 +5,7 @@ import time
 import uuid
 from pathlib import Path
 
-from agora.inspection import TARGETS, collect
+from agora.inspection import TARGETS, collect, normalize_repository, normalize_website
 from agora.store import Denied
 
 PROFILES = {
@@ -55,7 +55,59 @@ class Missions:
             CREATE TABLE IF NOT EXISTS mission_context (
               mission TEXT PRIMARY KEY REFERENCES missions(id),
               target TEXT NOT NULL, evidence TEXT);
+            CREATE TABLE IF NOT EXISTS console_projects (
+              id TEXT PRIMARY KEY, label TEXT NOT NULL,
+              repository TEXT NOT NULL, website TEXT NOT NULL,
+              notes TEXT NOT NULL DEFAULT '', created REAL NOT NULL,
+              UNIQUE(repository, website));
             """)
+
+    def projects(self):
+        builtin = [
+            {"id": key, "label": value["label"], "repository": value["repository"],
+             "website": value["website"], "notes": "", "custom": False}
+            for key, value in TARGETS.items()
+        ]
+        with self.store.db() as db:
+            custom = [dict(row) | {"custom": True} for row in db.execute(
+                "SELECT id,label,repository,website,notes FROM console_projects ORDER BY created,label"
+            )]
+        return builtin + custom
+
+    def project(self, target):
+        if target in TARGETS:
+            return {"id": target, **TARGETS[target], "custom": False, "notes": ""}
+        with self.store.db() as db:
+            row = db.execute(
+                "SELECT id,label,repository,website,notes FROM console_projects WHERE id=?",
+                (target,),
+            ).fetchone()
+        return dict(row) | {"custom": True} if row else None
+
+    def create_project(self, label, repository, website, notes=""):
+        if not isinstance(label, str) or not 1 <= len(label.strip()) <= 80:
+            raise ValueError("Nom de projet requis, 80 caractères maximum")
+        if not isinstance(notes, str) or len(notes) > 2000:
+            raise ValueError("Détails du projet : 2 000 caractères maximum")
+        repository = normalize_repository(repository)
+        website = normalize_website(website)
+        with self.store.db() as db:
+            row = db.execute(
+                "SELECT id,label,repository,website,notes FROM console_projects WHERE repository=? AND website=?",
+                (repository, website),
+            ).fetchone()
+            if row:
+                if row["label"] != label.strip() or row["notes"] != notes.strip():
+                    raise Denied("Ce dépôt et ce site sont déjà enregistrés avec d’autres détails")
+                return dict(row) | {"custom": True}
+            if db.execute("SELECT count(*) FROM console_projects").fetchone()[0] >= 100:
+                raise Denied("Limite de 100 projets atteinte")
+            project_id = str(uuid.uuid4())
+            db.execute(
+                "INSERT INTO console_projects(id,label,repository,website,notes,created) VALUES(?,?,?,?,?,?)",
+                (project_id, label.strip(), repository, website, notes.strip(), time.time()),
+            )
+        return self.project(project_id)
 
     def create(self, title, brief, agents, max_calls, seconds, request_key, target=None):
         if not isinstance(title, str) or not 1 <= len(title.strip()) <= 100:
@@ -75,7 +127,7 @@ class Missions:
             raise ValueError("Durée entre 3 et 30 minutes")
         if not isinstance(request_key, str) or not 1 <= len(request_key) <= 80:
             raise ValueError("Identifiant de création requis")
-        if target is not None and target not in TARGETS:
+        if target is not None and self.project(target) is None:
             raise ValueError("Projet non connecté")
         with self.store.db() as db:
             old = db.execute(
@@ -116,12 +168,17 @@ class Missions:
                 )
             return mid
 
-    def list(self):
+    def list(self, target=None):
         with self.store.db() as db:
+            if target:
+                return [dict(r) for r in db.execute(
+                    "SELECT m.*,c.target FROM missions m JOIN mission_context c ON c.mission=m.id "
+                    "WHERE c.target=? ORDER BY m.created DESC LIMIT 100", (target,)
+                )]
             return [
                 dict(r)
                 for r in db.execute(
-                    "SELECT * FROM missions ORDER BY created DESC LIMIT 100"
+                    "SELECT m.*,c.target FROM missions m LEFT JOIN mission_context c ON c.mission=m.id ORDER BY m.created DESC LIMIT 100"
                 )
             ]
 
@@ -185,7 +242,10 @@ class Missions:
             return False
         mid, target = row["id"], row["target"]
         try:
-            evidence = self.collector(target, Path(self.store.path).parent / "evidence" / mid)
+            source = target if target in TARGETS else self.project(target)
+            if source is None:
+                raise ValueError("Projet non connecté")
+            evidence = self.collector(source, Path(self.store.path).parent / "evidence" / mid)
         except Exception:  # noqa: BLE001 — never publish provider diagnostics or secrets
             with self.store.db() as db:
                 db.execute(

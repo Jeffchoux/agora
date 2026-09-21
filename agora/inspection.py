@@ -1,11 +1,14 @@
 """Bounded, read-only evidence for explicitly configured mission targets."""
 
 import base64
+import ipaddress
 import json
+import re
+import socket
 import subprocess
 import time
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse, urlsplit, urlunsplit
 
 from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import sync_playwright
@@ -36,6 +39,91 @@ TARGETS = {
     }
 }
 WIDTHS = (320, 768, 1440)
+REPOSITORY = re.compile(r"[A-Za-z0-9-]{1,39}/[A-Za-z0-9._-]{1,100}\Z")
+HOST_LABEL = re.compile(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\Z")
+SOURCE_SUFFIXES = (".py", ".ts", ".tsx", ".js", ".jsx", ".go", ".rs", ".swift", ".html", ".css", ".vue", ".svelte")
+
+
+def normalize_repository(raw):
+    if not isinstance(raw, str) or len(raw) > 250:
+        raise ValueError("Dépôt GitHub invalide")
+    value = raw.strip()
+    if value.startswith("https://github.com/"):
+        value = value.removeprefix("https://github.com/").rstrip("/")
+    value = value.removesuffix(".git")
+    if not REPOSITORY.fullmatch(value) or ".." in value:
+        raise ValueError("Indiquez un dépôt GitHub sous la forme owner/repo ou son URL")
+    return value
+
+
+def normalize_website(raw):
+    if not isinstance(raw, str) or not 10 <= len(raw) <= 2048 or any(ord(c) < 32 for c in raw):
+        raise ValueError("URL publique HTTPS invalide")
+    try:
+        url = urlsplit(raw.strip())
+        host = (url.hostname or "").encode("idna").decode("ascii").lower()
+        port = url.port
+    except (ValueError, UnicodeError) as exc:
+        raise ValueError("URL publique HTTPS invalide") from exc
+    labels = host.split(".")
+    if (
+        url.scheme != "https" or url.username or url.password or url.query or url.fragment
+        or port not in (None, 443) or len(labels) < 2
+        or any(not HOST_LABEL.fullmatch(label) for label in labels)
+    ):
+        raise ValueError("Indiquez une URL publique HTTPS sans identifiant, paramètre ni port spécial")
+    try:
+        ipaddress.ip_address(host)
+    except ValueError:
+        pass
+    else:
+        raise ValueError("Les adresses IP directes ne sont pas acceptées")
+    return urlunsplit(("https", host, url.path or "/", "", ""))
+
+
+def _public_address(host):
+    """Resolve every address; Chromium is pinned to one checked public IP."""
+    try:
+        addresses = {item[4][0] for item in socket.getaddrinfo(host, 443, type=socket.SOCK_STREAM)}
+    except OSError as exc:
+        raise ValueError("Adresse publique introuvable") from exc
+    if not addresses or any(not ipaddress.ip_address(address).is_global for address in addresses):
+        raise ValueError("Adresse publique requise")
+    return min(addresses, key=lambda address: (ipaddress.ip_address(address).version, address))
+
+
+def _sample_paths(files):
+    """Small cross-stack sample, excluding secrets, generated files and dependencies."""
+    groups = {"context": [], "tests": [], "code": []}
+    for path, item in files.items():
+        lower = path.lower()
+        parts = lower.split("/")
+        if item.get("size", 0) > 200_000 or any(
+            part in {"node_modules", "vendor", "dist", "build", ".next", "coverage", "credentials", "secrets"}
+            or part.startswith(".env") or any(word in part for word in ("secret", "credential", "private_key", "token"))
+            or part.endswith((".key", ".pem", ".lock", ".min.js"))
+            for part in parts
+        ):
+            continue
+        name = parts[-1]
+        if name in {"readme.md", "agents.md", "design.md", "package.json", "pyproject.toml", "go.mod", "cargo.toml"}:
+            group = "context"
+        elif ("test" in parts or "tests" in parts or "e2e" in parts or name.startswith("test_") or name.endswith((".test.ts", ".spec.ts", ".test.tsx", ".spec.tsx"))) and name.endswith(SOURCE_SUFFIXES):
+            group = "tests"
+        elif name.endswith(SOURCE_SUFFIXES) and ("src" in parts or "app" in parts or len(parts) <= 2):
+            group = "code"
+        else:
+            continue
+        groups[group].append(path)
+    for items in groups.values():
+        items.sort(key=lambda path: (len(path.split("/")), path))
+    chosen = groups["context"][:4] + groups["tests"][:3] + groups["code"][:3]
+    for path in groups["context"] + groups["tests"] + groups["code"]:
+        if len(chosen) >= 10:
+            break
+        if path not in chosen:
+            chosen.append(path)
+    return chosen
 
 
 def _github_json(path):
@@ -69,7 +157,13 @@ def _excerpt(path, body):
 
 def _repository(target):
     repo = target["repository"]
-    commit = _github_json(f"repos/{repo}/commits/main")
+    branch = "main"
+    if target.get("custom"):
+        metadata = _github_json(f"repos/{repo}")
+        branch = metadata.get("default_branch")
+        if not isinstance(branch, str) or not 1 <= len(branch) <= 100:
+            raise ValueError("Branche GitHub par défaut introuvable")
+    commit = _github_json(f"repos/{repo}/commits/{quote(branch, safe='')}")
     sha = commit["sha"]
     if len(sha) != 40 or any(c not in "0123456789abcdef" for c in sha):
         raise ValueError("SHA GitHub invalide")
@@ -78,7 +172,7 @@ def _repository(target):
         raise ValueError("Arbre GitHub tronqué")
     files = {item["path"]: item for item in tree["tree"] if item["type"] == "blob"}
     excerpts = []
-    for path in target["files"]:
+    for path in target.get("files") or _sample_paths(files):
         item = files.get(path)
         if not item or item["size"] > 200_000:
             continue
@@ -92,6 +186,7 @@ def _repository(target):
     checks = _github_json(f"repos/{repo}/commits/{sha}/check-runs?per_page=50")
     return {
         "repository": repo,
+        "branch": branch,
         "github_sha": sha,
         "file_count": len(files),
         "files": excerpts,
@@ -103,6 +198,8 @@ def _repository(target):
 
 
 def _production(target):
+    if not target.get("production_manifest"):
+        return None
     try:
         data = json.loads(Path(target["production_manifest"]).read_text())
         sha = data["source_sha"]
@@ -175,10 +272,12 @@ def _public_link_probe(page, target):
 
 def _browser(target, capture_dir):
     origin = urlparse(target["website"])
+    pinned_ip = _public_address(origin.hostname) if target.get("custom") else None
     results = []
     capture_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
     with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True)
+        args = [f"--host-resolver-rules=MAP {origin.hostname} {pinned_ip}", "--disable-features=DnsOverHttps"] if pinned_ip else []
+        browser = playwright.chromium.launch(headless=True, args=args)
         try:
             for width in WIDTHS:
                 context = browser.new_context(
@@ -195,8 +294,9 @@ def _browser(target, capture_dir):
                     if (
                         request_url.scheme == "https"
                         and request_url.hostname == origin.hostname
+                        and request_url.port in (None, 443)
                         and route.request.method == "GET"
-                    ) or (route.request.method == "GET" and _approved_link(route.request.url, target)):
+                    ) or (route.request.method == "GET" and target.get("public_link") and _approved_link(route.request.url, target)):
                         route.continue_()
                     else:
                         route.abort()
@@ -219,7 +319,7 @@ def _browser(target, capture_dir):
                     screenshot = capture_dir / f"{width}.png"
                     page.screenshot(path=str(screenshot), full_page=False, timeout=10000)
                     screenshot.chmod(0o600)
-                    probe = _public_link_probe(page, target) if width == 768 else None
+                    probe = _public_link_probe(page, target) if width == 768 and target.get("public_link") else None
                     results.append({
                         "viewport": width,
                         "http_status": response.status if response else None,
@@ -239,13 +339,23 @@ def _browser(target, capture_dir):
 
 def collect(target_id, capture_dir):
     """Collect immutable evidence; no repository code or model text is executed."""
-    if target_id not in TARGETS:
+    if isinstance(target_id, dict):
+        target = target_id
+        if not target.get("custom"):
+            raise ValueError("Projet non connecté")
+        normalize_repository(target["repository"])
+        normalize_website(target["website"])
+        project_id = target["id"]
+    elif target_id in TARGETS:
+        target = TARGETS[target_id]
+        project_id = target_id
+    else:
         raise ValueError("Projet non connecté")
-    target = TARGETS[target_id]
     repository = _repository(target)
     production_sha = _production(target)
     return {
-        "target": target_id,
+        "target": project_id,
+        "project_notes": target.get("notes", ""),
         "collected_at": int(time.time()),
         "website": target["website"],
         "production_sha": production_sha,
@@ -256,6 +366,8 @@ def collect(target_id, capture_dir):
             "Échantillon de fichiers, pas revue exhaustive du dépôt.",
             "Contrôles navigateur publics et résultats CI ; aucun test du code du dépôt exécuté par Agora.",
             "Codex reçoit les captures ; les autres participants voient les mesures DOM.",
-            "Le lien public de repli est vérifié par Tab, Entrée et GET ; formulaire non soumis.",
+            "Le lien public de repli est vérifié par Tab, Entrée et GET ; formulaire non soumis." if target.get("public_link") else "Aucun lien sortant ni formulaire n’a été activé.",
+            "Provenance de production non configurée pour ce projet." if not target.get("production_manifest") else "Provenance de production lue dans le manifeste configuré.",
+            "Les ressources hébergées sur d’autres domaines sont bloquées ; le rendu peut être incomplet." if target.get("custom") else "Les ressources externes non prévues sont bloquées.",
         ],
     }

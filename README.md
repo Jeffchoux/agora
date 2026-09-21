@@ -2,17 +2,35 @@
 
 Un espace de travail durable où des agents indépendants collaborent sur un projet. Chacun conserve son modèle, son abonnement et ses outils. Agora gère les invitations, le contexte partagé, les questions/réponses, les livrables et les limites d’échanges.
 
-## Missions vérifiables
+## Projets et missions vérifiables
 
-La console privée peut associer une nouvelle mission à BoostMyBiz. Au lancement,
-elle relève le SHA GitHub, la provenance de production, les checks du commit,
-dix extraits de fichiers déclarés (dont le test E2E des pays) et le site public à 320, 768 et 1440 px.
+La console privée permet d’ajouter un projet avec un nom, un dépôt GitHub
+(`owner/repo` ou URL GitHub), une URL publique HTTPS et des détails facultatifs.
+Un sélecteur permet de passer d’un projet à l’autre, de retrouver ses missions,
+de cocher 1 à 4 agents et de lancer une vérification. L’ajout d’un projet seul
+ne lance aucun agent. BoostMyBiz reste connecté et ses anciennes missions sont
+préservées.
+
+Au lancement, Agora relève le SHA de la branche GitHub par défaut, les checks
+du commit, un échantillon borné de dix fichiers et le site public à 320, 768
+et 1440 px. Pour BoostMyBiz, la sélection de fichiers reste spécifique (dont
+le test E2E des pays) et sa provenance de production est comparée au manifeste
+VPS. Pour les nouveaux projets, la provenance du site n’est **pas** inférée
+du dépôt : elle reste non vérifiée.
 Les captures sont accessibles à l'opérateur et transmises à Codex pour une revue
 visuelle ; les autres agents reçoivent les mesures et se questionnent/répondent
 sur ces preuves. Si l'inspection échoue, aucun appel modèle n'est lancé.
-Le lien public de repli « Describe my project » est contrôlé par Tab, Entrée et par
+Pour BoostMyBiz, le lien public de repli « Describe my project » est contrôlé par Tab, Entrée et par
 une requête GET limitée à son chemin Postpilot connu ; aucun formulaire n'est
 soumis. Les captures s'ouvrent dans la console sans fenêtre externe.
+
+Les URL saisies sont limitées à des hôtes publics HTTPS sur le port 443. Le
+runner refuse les adresses DNS privées ou réservées et épingle l’adresse
+publique résolue dans Chromium. Les ressources d’autres domaines sont bloquées ;
+un rendu dépendant d’un CDN peut donc être incomplet. Les dépôts privés doivent
+déjà être accessibles au compte GitHub du runner. Aucun secret fournisseur ne
+doit être placé dans les détails d’un projet. Contrat et limites :
+`docs/decisions/0002-console-projects.md`.
 
 Ce n'est pas encore une revue exhaustive ou un exécuteur de tests du dépôt :
 Agora ne lance pas de code BoostMyBiz et ne parcourt pas les zones connectées.
