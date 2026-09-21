@@ -4,6 +4,7 @@ let token = sessionStorage.getItem('agora-operator') || '', selected = null, bus
 let listSnapshot = '', detailSnapshot = '', firstLoad = true, formSeeded = false, targetsSnapshot = '';
 let projectFilter = sessionStorage.getItem('agora-project') || 'all', targets = [], agentLabels = {};
 let chatSnapshot = '';
+let motionPaused = sessionStorage.getItem('agora-motion-paused') === 'true';
 const labels = {draft:'Prête à lancer', queued:'En attente', running:'En cours', finished:'Échanges terminés', stopped:'Arrêtée', failed:'Échec', done:'Contribution reçue'};
 function el(tag, value, cls) { const n = document.createElement(tag); if (value !== undefined) n.textContent = value; if (cls) n.className = cls; return n; }
 function notice(value, error = false) { $('notice').textContent = value; $('notice').className = error ? 'error' : ''; }
@@ -98,6 +99,7 @@ async function show(id, focus = false, force = false) {
   actions.append(download); heading.append(title,actions); box.append(heading);
   const target = m.evidence?.repository || targets.find(t => t.id === m.target)?.label || (m.target ? 'Projet indisponible' : 'Projet non connecté');
   box.append(el('p', target + ' · Agents : ' + m.agents.map(id => agentLabels[id] || id).join(', ') + ' · ' + m.calls + ' / ' + m.max_calls + ' appels · ' + (m.seconds / 60) + ' min maximum', 'mission-meta'));
+  box.append(conversationView(m));
   const answer = [...m.turns].reverse().find(t => t.status === 'done' && ['answer','review','artifact'].includes(t.kind));
   const latest = answer || [...m.turns].reverse().find(t => t.status === 'done');
   const result = el('section', undefined, 'result');
@@ -117,9 +119,11 @@ async function show(id, focus = false, force = false) {
   else box.append(el('p', m.target ? 'Preuves du dépôt et du site en attente.' : 'Ancienne mission sans projet connecté : seul le brief était disponible.', 'hint'));
   if (m.turns.length) {
     const conversation = el('details', undefined, 'section-details');
+    conversation.id = 'conversation-transcript';
     conversation.append(el('summary','Tous les échanges (' + m.turns.length + ')'));
     for (const t of m.turns) {
       const card = el('article',undefined,'turn'), h = el('div',undefined,'turn-heading');
+      card.id = 'turn-' + t.id; card.tabIndex = -1;
       const kind = {question:'Question',answer:'Réponse',review:'Revue',artifact:'Livrable'}[t.kind] || 'Contribution';
       h.append(el('strong', String(t.ordinal).padStart(2,'0') + ' · ' + kind + ' · ' + t.agent), el('span',labels[t.status] || t.status,'status'));
       card.append(h,el('p',t.body || 'L’agent prépare sa contribution…','prewrap')); conversation.append(card);
@@ -127,6 +131,82 @@ async function show(id, focus = false, force = false) {
     box.append(conversation);
   }
   if (focus) { listSnapshot = ''; focusDetail(); refresh().catch(e => notice(e.message,true)); }
+}
+function openTurn(turnId) {
+  const transcript = $('conversation-transcript'), turn = $('turn-' + turnId);
+  if (!transcript || !turn) return;
+  transcript.open = true; turn.scrollIntoView({block:'center'}); turn.focus({preventScroll:true});
+}
+function conversationView(m) {
+  const section = el('section',undefined,'conversation-map' + (motionPaused ? ' motion-paused' : ''));
+  section.setAttribute('aria-label','Qui parle à qui');
+  const name = id => agentLabels[id] || id;
+  const active = m.turns.find(t => t.status === 'running');
+  const last = [...m.turns].reverse().find(t => t.status === 'done');
+  const failed = [...m.turns].reverse().find(t => t.status === 'failed');
+  const current = active || (m.status === 'failed' ? failed : null) || last;
+  const moving = Boolean(active && m.status === 'running');
+  const heading = el('div',undefined,'conversation-heading');
+  heading.append(el('h3','Autour de la table'),el('span',moving ? 'Échange en cours' : labels[m.status] || m.status,'status'));
+  section.append(heading);
+  if (moving) {
+    const toggle = el('button',motionPaused ? 'Activer le mouvement' : 'Suspendre le mouvement','motion-toggle');
+    toggle.type = 'button'; toggle.setAttribute('aria-pressed',String(motionPaused));
+    toggle.onclick = () => { motionPaused = !motionPaused; sessionStorage.setItem('agora-motion-paused',String(motionPaused)); section.classList.toggle('motion-paused',motionPaused); toggle.textContent = motionPaused ? 'Activer le mouvement' : 'Suspendre le mouvement'; toggle.setAttribute('aria-pressed',String(motionPaused)); };
+    section.append(toggle);
+  }
+  let headline, detail;
+  if (current) {
+    const kind = current.kind || current.expected_kind;
+    const recipient = current.recipient;
+    const self = recipient === current.agent;
+    if (current.status === 'failed') headline = name(current.agent) + ' n’a pas terminé son intervention';
+    else if (active && m.status === 'stopped') headline = 'Arrêt demandé · ' + name(active.agent) + ' termine l’appel engagé';
+    else if (kind === 'answer') headline = name(current.agent) + (active ? ' prépare sa réponse' : ' a répondu') + (recipient && !self ? ' à ' + name(recipient) : ' au projet');
+    else if (kind === 'question') headline = name(current.agent) + (active ? ' prépare une question' : ' a posé une question') + (recipient && !self ? ' à ' + name(recipient) : ' pour le prochain tour');
+    else headline = name(current.agent) + (active ? ' prépare la synthèse' : ' a livré sa contribution');
+    detail = active ? 'La réponse apparaîtra une fois reçue. État actualisé toutes les 10 secondes.' : current.body;
+    const pair = el('div',undefined,'exchange-pair' + (moving ? ' is-live' : ''));
+    const participant = (id, label) => {
+      const person = el('div',undefined,'exchange-person');
+      const avatar = el('span',name(id).slice(0,2).toUpperCase(),'agent-avatar'); avatar.setAttribute('aria-hidden','true');
+      person.append(avatar,el('strong',name(id)),el('small',label)); return person;
+    };
+    pair.append(participant(current.agent,active ? 'Intervient' : current.status === 'failed' ? 'Interrompu' : 'Contribution reçue'));
+    const link = el('div',undefined,'exchange-link'); link.setAttribute('aria-hidden','true'); link.append(el('span',undefined,'exchange-dot'),el('span','→','exchange-arrow')); pair.append(link);
+    if (recipient && !self) pair.append(participant(recipient,kind === 'answer' ? 'Auteur de la question' : 'Prochain interlocuteur'));
+    else { const project = el('div',undefined,'exchange-person'); project.append(el('span','a','agent-avatar project-avatar'),el('strong',self ? 'Tour suivant' : 'Le projet'),el('small',self ? 'Même agent sélectionné' : 'Synthèse partagée')); pair.append(project); }
+    section.append(pair);
+  } else {
+    headline = m.status === 'queued' ? 'Les agents attendent leur tour' : m.status === 'failed' ? 'La préparation n’a pas abouti' : m.status === 'stopped' ? 'Mission arrêtée avant les échanges' : 'Votre équipe est prête';
+    detail = m.status === 'queued' ? 'Le runner prépare les sources fournies avant le premier appel.' : 'Les échanges apparaîtront ici après le lancement de la mission.';
+  }
+  const summary = el('p',headline,'exchange-headline'); summary.setAttribute('role','status'); section.append(summary);
+  section.append(el('p',detail ? detail.slice(0,240) + (detail.length > 240 ? '…' : '') : 'Aucune réponse reçue pour cet appel.','exchange-excerpt'));
+  const roster = el('div',undefined,'agent-roster');
+  for (const id of m.agents) {
+    const turns = m.turns.filter(t => t.agent === id), latest = [...turns].reverse().find(t => t.status === 'done');
+    const isActive = active?.agent === id && m.status === 'running';
+    const button = el('button',undefined,'roster-agent' + (isActive ? ' is-speaking' : ''));
+    button.type = 'button'; button.append(el('span',name(id)),el('small',isActive ? 'Intervient maintenant' : m.next_agent === id ? 'Prochaine intervention' : turns.some(t => t.status === 'failed') ? 'Appel échoué' : latest ? turns.filter(t => t.status === 'done').length + ' contribution(s)' : 'Aucune contribution'));
+    if (latest) { button.setAttribute('aria-label','Lire la dernière contribution de ' + name(id)); button.onclick = () => openTurn(latest.id); }
+    else { button.disabled = true; }
+    roster.append(button);
+  }
+  section.append(roster);
+  const exchanges = m.turns.filter(t => t.status === 'done').slice(-3);
+  if (exchanges.length) {
+    const list = el('ol',undefined,'exchange-history'); list.setAttribute('aria-label','Derniers passages de parole');
+    for (const t of exchanges) {
+      const row = el('li'), button = el('button',undefined,'exchange-history-link'); button.type = 'button';
+      const kind = {question:'Question',answer:'Réponse',review:'Synthèse',artifact:'Livrable'}[t.kind] || 'Contribution';
+      button.append(el('span',String(t.ordinal).padStart(2,'0'),'exchange-number'),el('span',name(t.agent) + (t.recipient && t.recipient !== t.agent ? ' → ' + name(t.recipient) : ' → projet')),el('small',kind));
+      button.onclick = () => openTurn(t.id); row.append(button); list.append(row);
+    }
+    section.append(list);
+  }
+  section.append(el('p','Les flèches relient les questions à leurs réponses. Chaque agent intervient dans l’ordre choisi pour la mission.','hint'));
+  return section;
 }
 function focusDetail() { const box = $('detail'); box.scrollIntoView({block:'start'}); box.tabIndex = -1; box.focus({preventScroll:true}); }
 function evidenceView(m) {

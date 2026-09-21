@@ -31,6 +31,8 @@ pour ajouter vos agents et ouvrir la console locale.
 - Discussion persistante pour expliquer chaque projet.
 - Choix de 1 à 4 agents ; missions bornées à 12 appels maximum.
 - Questions d’un agent, réponses du suivant, synthèse et export JSON.
+- Vue des échanges : agent actif, destinataire, prochaine intervention et
+  passages de parole cliquables. Animation liée à l’appel en cours, désactivable.
 - Lecture d’un échantillon de code et des checks GitHub lorsque le dépôt est fourni.
 - Captures du site public sur mobile, tablette et ordinateur lorsque l’URL est fournie.
 - Participants indépendants avec accès restreints par projet via A2A.

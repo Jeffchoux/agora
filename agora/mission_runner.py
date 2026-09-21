@@ -19,8 +19,8 @@ def step(missions):
         return False
     specialties = ("code et CI", "code et CI", "URL, UX et accessibilité", "URL, UX et accessibilité")
     specialty = specialties[(reservation["ordinal"] - 1) % len(specialties)] if reservation["evidence"] and (reservation["evidence"].get("repository") or reservation["evidence"].get("website")) else "objectifs du projet, faisabilité et questions à éclaircir"
-    awaiting_answer = bool(reservation["previous"] and reservation["previous"][-1]["kind"] == "question")
-    ask_question = not awaiting_answer and reservation["ordinal"] < reservation["max_calls"]
+    awaiting_answer = reservation["expected_kind"] == "answer"
+    ask_question = reservation["expected_kind"] == "question"
     context = {
         "evidence": reservation["evidence"],
         "project_chat": [{"body": item["body"][:1500]} for item in reservation.get("project_chat", [])],
@@ -30,6 +30,7 @@ def step(missions):
             for item in reservation["previous"]
         ],
         "agent": reservation["agent"],
+        "recipient": reservation["recipient"],
         "ordinal": reservation["ordinal"],
         "max_calls": reservation["max_calls"],
     }
