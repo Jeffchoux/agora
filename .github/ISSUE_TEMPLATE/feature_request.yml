@@ -1,0 +1,24 @@
+name: Feature request
+description: Describe a concrete user need and a way to verify the result.
+title: "[Feature] "
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What are you trying to achieve?
+      description: Describe the project or workflow without private information.
+    validations:
+      required: true
+  - type: textarea
+    id: friction
+    attributes:
+      label: What gets in the way today?
+    validations:
+      required: true
+  - type: textarea
+    id: success
+    attributes:
+      label: What would a successful result look like?
+      description: Include a concrete example or a verifiable acceptance criterion.
+    validations:
+      required: true
