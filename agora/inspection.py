@@ -29,6 +29,9 @@ TARGETS = {
             "engine/README.md",
             "engine/templates/site.html.j2",
             "engine/test/test_global_landing_locale.py",
+            "app/[locale]/page.ts",
+            "app/communication-messages.ts",
+            "e2e/country-coverage.spec.ts",
         ),
     }
 }
@@ -51,6 +54,19 @@ def _github_json(path):
         raise ValueError("Lecture GitHub indisponible") from exc
 
 
+def _excerpt(path, body):
+    lines = body.splitlines()
+    if path == "app/[locale]/page.ts":
+        selected = set()
+        for index, line in enumerate(lines):
+            if "const countryAgency" in line or "function applyCountryMode" in line:
+                selected.update(range(max(0, index - 2), min(len(lines), index + 14)))
+        if selected:
+            return "\n".join(f"{i + 1}: {lines[i]}" for i in sorted(selected))[:2400]
+    limit = 2400 if path == "e2e/country-coverage.spec.ts" else 1200
+    return "\n".join(f"{number}: {line}" for number, line in enumerate(lines, 1))[:limit]
+
+
 def _repository(target):
     repo = target["repository"]
     commit = _github_json(f"repos/{repo}/commits/main")
@@ -71,9 +87,7 @@ def _repository(target):
             continue
         raw = base64.b64decode(blob["content"], validate=False)
         body = raw.decode("utf-8", errors="replace")
-        excerpt = "\n".join(
-            f"{number}: {line}" for number, line in enumerate(body.splitlines(), 1)
-        )[:1200]
+        excerpt = _excerpt(path, body)
         excerpts.append({"path": path, "blob_sha": item["sha"], "excerpt": excerpt})
     checks = _github_json(f"repos/{repo}/commits/{sha}/check-runs?per_page=50")
     return {
