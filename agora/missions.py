@@ -39,6 +39,15 @@ PROFILES = {
 }
 
 
+def interaction(agents, ordinal, max_calls, previous):
+    """The same addressing contract drives the dispatcher and the live UI."""
+    if previous and previous[-1]["kind"] == "question":
+        return {"expected_kind": "answer", "recipient": previous[-1]["agent"]}
+    if ordinal < max_calls:
+        return {"expected_kind": "question", "recipient": agents[ordinal % len(agents)]}
+    return {"expected_kind": "review", "recipient": None}
+
+
 class Missions:
     def __init__(self, store, collector=collect):
         self.store = store
@@ -239,6 +248,15 @@ class Missions:
                     (mid,),
                 )
             ]
+            prior = []
+            for turn in result["turns"]:
+                turn.update(interaction(result["agents"], turn["ordinal"], result["max_calls"], prior))
+                if turn["status"] == "done":
+                    # Old missions may contain contributions from earlier dispatchers.
+                    if turn["kind"] != turn["expected_kind"]:
+                        turn["recipient"] = None
+                    prior.append(turn)
+            result["next_agent"] = result["agents"][result["calls"] % len(result["agents"])] if result["status"] in {"draft", "queued", "running"} and result["calls"] < result["max_calls"] else None
             result["api_budget_usd"] = None if any(self.profiles.get(a, {}).get("provider") in {"openai-compatible", "openrouter-free"} for a in result["agents"]) else 0
             context = db.execute(
                 "SELECT target,evidence FROM mission_context WHERE mission=?", (mid,)
@@ -354,6 +372,7 @@ class Missions:
                 "agent": agent,
                 "brief": m["brief"],
                 "project_chat": [dict(r) for r in db.execute("SELECT body FROM project_chat WHERE project=? ORDER BY id DESC LIMIT 8", (context["target"],))][::-1] if context else [],
+                **interaction(json.loads(m["agents"]), m["calls"] + 1, m["max_calls"], list(reversed(prior))),
                 "previous": list(reversed(prior)),
                 "ordinal": m["calls"] + 1,
                 "max_calls": m["max_calls"],

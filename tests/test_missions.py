@@ -9,6 +9,25 @@ from agora.store import Denied, Store
 from agora.worker import Contribution
 
 
+def test_addressing_matches_dispatcher_and_live_view(tmp_path):
+    m = Missions(Store(tmp_path / "db.sqlite"))
+    mid = m.create("Conversation", "Compare findings and answer each other.", ["codex", "qwen-coder", "grok"], 4, 600, "flow")
+    m.action(mid, "start")
+    first = m.reserve()
+    assert (first["agent"], first["recipient"], first["expected_kind"]) == ("codex", "qwen-coder", "question")
+    m.finish(first["turn"], Contribution(kind="question", body="What is the evidence?"))
+    second = m.reserve()
+    assert (second["agent"], second["recipient"], second["expected_kind"]) == ("qwen-coder", "codex", "answer")
+    view = m.detail(mid)
+    assert view["turns"][0]["recipient"] == "qwen-coder"
+    assert view["turns"][1]["recipient"] == "codex"
+    assert view["next_agent"] == "grok"
+    m.action(mid, "stop")
+    assert m.detail(mid)["next_agent"] is None
+    m.finish(second["turn"], Contribution(kind="answer", body="Here is the evidence."))
+    assert m.detail(mid)["status"] == "stopped"
+
+
 def new(tmp_path):
     m = Missions(Store(tmp_path / "db.sqlite"))
     mid = m.create(
