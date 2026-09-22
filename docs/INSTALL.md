@@ -60,25 +60,40 @@ Agora limite les appels, pas une facture en euros. Aucun rechargement automatiqu
 À la racine du dépôt :
 
 ```sh
-export AGORA_ADMIN_TOKEN_FILE="$HOME/.config/agora/operator.key"
-export AGORA_AGENTS_FILE="$HOME/.config/agora/agents.json"
-export AGORA_DB="$HOME/.config/agora/agora.sqlite"
-uv run --no-sync uvicorn agora.server:create_app --factory --host 127.0.0.1 --port 8768
+uv run --no-sync python -m agora start
 ```
 
 Ouvrez `http://127.0.0.1:8768`. L’accueil est en anglais par défaut ; le sélecteur
 permet de choisir le français. Les exemples sont fictifs et n’appellent aucun modèle.
 Dans la section d’installation, choisissez « Déjà installé ? Ouvrir cette console »
 puis chargez `operator.key` avec le sélecteur de fichier. Il ne s’agit pas d’une clé API.
-Dans un deuxième terminal, définissez les mêmes variables puis :
+La console et le moteur des missions fonctionnent dans ce seul terminal, sans
+variables à exporter. Sans profil, les exemples et la création de projets restent
+accessibles. Aucun fournisseur n’est contacté pour vérifier la configuration.
+**Les missions précédemment mises en file d’attente reprennent au démarrage.**
+
+Redémarrez après modification des profils. Ctrl+C ou SIGTERM arrête les nouveaux
+tours et attend la fin de l’étape engagée (collecte ou appel modèle), puis libère
+le verrou. Cela peut prendre plusieurs minutes et n’annule pas un coût déjà
+engagé. Évitez l’arrêt forcé pendant un appel.
+
+Autre dossier privé ou port occupé :
 
 ```sh
-uv run --no-sync python -m agora.mission_runner
+uv run --no-sync python -m agora start --directory /chemin/prive/agora --port 8769
 ```
 
-Le runner reste inactif tant qu’aucune mission n’est lancée. Redémarrez console
-et runner après modification des profils. Ctrl+C les arrête ; un appel déjà
-engagé peut terminer.
+Utilisez d’abord `init` avec le même `--directory`. `start` emploie exclusivement
+les fichiers `operator.key`, `agents.json` et `agora.sqlite` de ce dossier, même
+si d’anciennes variables AGORA désignent une autre installation. Le mode
+historique est désactivé. L’écoute reste sur `127.0.0.1` ; aucune exposition réseau,
+aucun remplacement de clés ni arrêt d’un autre service. Lanceur POSIX testé sur
+macOS ; Windows non pris en charge.
+
+Les erreurs indiquent quoi vérifier : fichiers privés 0600 et dossier 0700,
+profil invalide, port occupé ou moteur déjà actif. Pour deux services supervisés
+séparés, les anciennes commandes restent disponibles dans le
+[guide détaillé](INSTALL.en.md#advanced-separate-supervised-services).
 
 Pour les dépôts : installez GitHub CLI puis `gh auth login` avec votre compte.
 Pour les sites : `uv run --no-sync playwright install chromium`.

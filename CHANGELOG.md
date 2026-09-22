@@ -1,5 +1,15 @@
 # Changelog
 
+## One-terminal local startup · 2026-09-22
+
+- `python -m agora start` starts the local console and mission runner together;
+  optional private directory and port, loopback only, no provider probe.
+- Actionable private-file/profile/port/runner-lock errors without exposing keys.
+- Ctrl+C / SIGTERM stop new steps, finish the current step and release the lock;
+  an existing installation resumes already queued missions when restarted.
+- English and French quick starts now open a usable local workspace directly.
+  Existing separate service entrypoints remain unchanged.
+
 ## Decision briefs · 2026-09-21
 
 - Optional shared decision question, with one latest position per selected agent:

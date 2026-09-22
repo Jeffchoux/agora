@@ -12,10 +12,13 @@ def main():
     p = argparse.ArgumentParser(
         description="Agora — projets et collaboration inter-agents"
     )
-    p.add_argument("--db", default=os.environ.get("AGORA_DB", "state/agora.sqlite"))
+    p.add_argument("--db", default=None)
     sub = p.add_subparsers(dest="cmd", required=True)
     setup = sub.add_parser("init", help="Create private local installation files")
     setup.add_argument("--directory", default=str(Path.home() / ".config" / "agora"))
+    start = sub.add_parser("start", help="Start your local console and mission runner together")
+    start.add_argument("--directory", default=str(Path.home() / ".config" / "agora"))
+    start.add_argument("--port", type=int, default=8768)
     c = sub.add_parser("create")
     c.add_argument("project")
     c.add_argument("--brief-file", required=True)
@@ -42,6 +45,17 @@ def main():
     r.add_argument("agent")
     a = p.parse_args()
     os.umask(0o077)
+    if a.cmd == "start":
+        from agora.launcher import StartupError, start_local
+
+        if a.db is not None:
+            p.error("start uses its private directory; use --directory instead of --db")
+        try:
+            start_local(a.directory, a.port)
+        except StartupError as error:
+            p.error(str(error))
+        return
+    a.db = a.db or os.environ.get("AGORA_DB", "state/agora.sqlite")
     if a.cmd == "init":
         directory = Path(a.directory).expanduser()
         directory.mkdir(parents=True, exist_ok=True, mode=0o700)

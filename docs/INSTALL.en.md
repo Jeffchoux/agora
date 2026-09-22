@@ -93,10 +93,7 @@ Set billing limits with your provider: AGORA's call cap is not a dollar cap.
 In a terminal at the repository root:
 
 ```sh
-export AGORA_ADMIN_TOKEN_FILE="$HOME/.config/agora/operator.key"
-export AGORA_AGENTS_FILE="$HOME/.config/agora/agents.json"
-export AGORA_DB="$HOME/.config/agora/agora.sqlite"
-uv run --no-sync uvicorn agora.server:create_app --factory --host 127.0.0.1 --port 8768
+uv run --no-sync python -m agora start
 ```
 
 Open **http://127.0.0.1:8768**. The public introduction lets you explore fictional
@@ -104,16 +101,44 @@ examples without a key. Under **Get Agora**, choose **Already installed? Open
 this workspace**, then use the file selector to load your local `operator.key`.
 This is your installation’s operator key, not a provider API key.
 
-In a second terminal at the same repository root, set the same three environment
-variables, then run:
+The console and mission runner run together in this terminal. No second terminal
+or environment exports are needed. With no profiles, you can still explore the
+examples and create projects. No provider is contacted to check configuration.
+Only explicitly launched missions call your selected agents. **Previously queued
+missions resume on startup**, including ones queued in an earlier session.
+
+Restart after changing profiles. Ctrl+C or SIGTERM stops new runner steps and
+waits for the current step (source collection or model call) to finish before
+releasing the database lock. This may take minutes; it does not cancel a charge
+already incurred. Do not force-kill the process during a provider call.
+
+For a different private directory or an occupied port:
 
 ```sh
-uv run --no-sync python -m agora.mission_runner
+uv run --no-sync python -m agora start --directory /path/to/private/agora --port 8769
 ```
 
-The runner stays idle until you launch a mission. Restart both processes after
-changing agent profiles. Ctrl+C stops a process; an already started provider
-call may finish before it exits.
+Use the same `--directory` with `init` first. `start` always uses `operator.key`,
+`agents.json` and `agora.sqlite` in that directory, overriding inherited
+`AGORA_ADMIN_TOKEN_FILE`, `AGORA_AGENTS_FILE`, `AGORA_DB` and legacy mode.
+It binds only to `127.0.0.1`, never exposes your machine to the network, and never
+replaces keys or stops an existing service. Windows is not supported by this
+POSIX launcher; macOS is tested, Linux uses the same POSIX interfaces.
+
+### Advanced: separate supervised services
+
+Existing deployments can retain their two entrypoints. In **each** service's
+environment, set these paths to the same private installation:
+
+```sh
+export AGORA_ADMIN_TOKEN_FILE="$HOME/.config/agora/operator.key"
+export AGORA_AGENTS_FILE="$HOME/.config/agora/agents.json"
+export AGORA_DB="$HOME/.config/agora/agora.sqlite"
+```
+
+Run `uv run --no-sync uvicorn agora.server:create_app --factory --host 127.0.0.1 --port 8768`
+for the web service and `uv run --no-sync python -m agora.mission_runner` for the
+runner. Do not run these alongside `agora start` against the same database.
 
 ## 4. Complete your first mission
 
@@ -163,8 +188,13 @@ and read-only; AGORA does not run the target repository's test suite.
 
 | What you see | Check |
 | --- | --- |
-| No agents in the selector | `AGORA_AGENTS_FILE`, valid profiles, file permissions; restart both processes |
-| Mission stays queued | Start the runner with the same database and profiles as the console |
+| Configuration missing | Run `agora init` with the same `--directory` as `start`; never copy someone else's key. |
+| Private file / directory error | Use operator-owned regular files at mode 0600 and a directory at 0700; no symlinks. |
+| Invalid agents.json | Follow the profile examples above. Keys belong in the private credentials file, not the profiles. |
+| Port already in use | Choose `--port 8769`; Agora does not kill the other service. |
+| Runner already owns the database | Stop the existing runner before using the combined launcher. |
+| No agents in the selector | Edit the selected directory's `agents.json`, then restart `agora start`; for separate services, check `AGORA_AGENTS_FILE`. |
+| Mission stays queued | Confirm `agora start` is still running; for separate services, start the runner with the console's database and profiles. |
 | Provider call fails | Model name, CLI login or API key, quota and adapter compatibility; no automatic paid fallback |
 | Inspection fails before agents run | GitHub account access, public HTTPS URL, installed Chromium |
 | Console login rejected | Load your own `operator.key` from the path used by the console |
