@@ -45,11 +45,14 @@ git clone https://github.com/Jeffchoux/agora.git
 cd agora
 uv sync --locked --no-build
 uv run --no-sync python -m agora init
+uv run --no-sync python -m agora start
 ```
 
-Initialization creates private files in `~/.config/agora`. It does not activate
-an agent or make a model call. Continue with the **[installation guide](docs/INSTALL.en.md)**
-to connect your own agent and start the console and runner.
+Open **http://127.0.0.1:8768**. One command starts the console and mission runner;
+Ctrl+C stops both. Explore the examples immediately, with no provider account.
+Initialization creates private files in `~/.config/agora` and activates no agent.
+Use the **[installation guide](docs/INSTALL.en.md)** to add your own agent, then
+restart. An existing installation resumes previously queued missions on startup.
 
 Already using Ollama? Configure a model you have installed and try a
 description-only project. GitHub CLI and Chromium are only needed when you

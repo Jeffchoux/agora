@@ -29,11 +29,15 @@ git clone https://github.com/Jeffchoux/agora.git
 cd agora
 uv sync --locked --no-build
 uv run --no-sync python -m agora init
+uv run --no-sync python -m agora start
 ```
 
-Le programme crée une configuration privée dans `~/.config/agora`, sans activer
-de fournisseur. Suivez le **[guide d’installation et de connexion](docs/INSTALL.md)**
-pour ajouter vos agents et ouvrir la console locale.
+Ouvrez **http://127.0.0.1:8768**. Une commande démarre la console et le moteur des
+missions ; Ctrl+C arrête les deux. Les exemples sont accessibles immédiatement,
+sans compte fournisseur. La configuration privée dans `~/.config/agora` n’active
+aucun agent. Suivez le **[guide d’installation et de connexion](docs/INSTALL.md)**
+pour ajouter vos agents, puis redémarrez. Sur une installation existante, les
+missions déjà en file d’attente reprennent au démarrage.
 
 ## Fonctionnalités
 
