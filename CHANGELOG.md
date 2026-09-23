@@ -1,5 +1,16 @@
 # Changelog
 
+## Experimental local Laya suggestions · 2026-09-23
+
+- Optional **Suggest review focus · Laya** action in the mission form, in English
+  and French. Accepting adds code, UX or product guidance to your question;
+  agent selection and mission launch remain explicit.
+- Offline Mac helper with a separate private secret and optional loopback-only
+  SSH tunnel for Linux-hosted Agora. No paid API, automatic download or fallback.
+- No confidence-as-truth score, silent truncation, repository inspection or
+  automatic routing. Editing the input or signing out discards stale results.
+- Disabled by default. See [setup and limitations](docs/LAYA.md).
+
 ## One-terminal local startup · 2026-09-22
 
 - `python -m agora start` starts the local console and mission runner together;

@@ -4,6 +4,7 @@ from fastapi import Request
 from fastapi.responses import FileResponse, JSONResponse
 
 from agora.inspection import WIDTHS
+from agora.laya import Busy, LayaBridge, Unavailable, configured, validate_brief
 from agora.missions import Missions
 from agora.store import Denied
 
@@ -16,6 +17,7 @@ def public_asset(name):
 
 def install(app, store):
     missions = Missions(store)
+    laya = LayaBridge()
 
     # Explicit files only: never expose the static directory or a user-supplied path.
     @app.get("/i18n.js")
@@ -84,7 +86,22 @@ def install(app, store):
             ],
             "targets": missions.projects(),
             "api_budget_usd": None,
+            "laya": {"configured": configured()},
         }
+
+    @app.post("/v1/console/laya/suggestions")
+    async def suggest_laya(request: Request):
+        try:
+            brief = validate_brief(await request.json())
+            if not configured():
+                raise Unavailable()
+            return await laya.suggest(brief)
+        except (ValueError, TypeError):
+            return JSONResponse({"error": "Use a shorter brief of 10–1200 characters"}, status_code=400)
+        except Busy:
+            return JSONResponse({"error": "Local suggestion busy; try again shortly"}, status_code=429)
+        except Unavailable:
+            return JSONResponse({"error": "Local suggestion unavailable; choose your review focus manually"}, status_code=503)
 
     @app.get("/v1/console/projects")
     def projects():
