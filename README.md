@@ -36,6 +36,9 @@ Questions and answers are sequential, not simultaneous independent research.
 The live view refreshes every ten seconds. Its motion reflects an active call,
 can be paused, and respects reduced-motion preferences.
 
+Optional: a [local Laya helper](docs/LAYA.md) can suggest a review focus from your
+question. It is experimental, not a reviewer or an automatic agent router.
+
 ## Start your own workspace
 
 You need Python 3.11+ and [uv](https://docs.astral.sh/uv/).

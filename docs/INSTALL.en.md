@@ -186,6 +186,14 @@ and read-only; AGORA does not run the target repository's test suite.
 
 ## Troubleshooting
 
+### Optional local Laya helper
+
+A compatible Mac can suggest a code, UX or product review focus from a short
+question. It does not join the agent discussion or start missions. Suggestions
+are experimental and require your acceptance. See [private setup and limits](LAYA.md),
+including connecting a Mac to an Agora instance hosted on Linux. No automatic
+model downloads or paid API fallback.
+
 | What you see | Check |
 | --- | --- |
 | Configuration missing | Run `agora init` with the same `--directory` as `start`; never copy someone else's key. |

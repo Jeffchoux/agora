@@ -110,6 +110,14 @@ apparaissent dans la mission, avec l’historique et les preuves disponibles.
 
 ## Hébergement et mises à jour
 
+### Aide locale facultative : Laya
+
+Un Mac compatible peut suggérer un angle code, UX ou produit à partir d’une
+question courte. Laya n’est pas un agent de discussion et ne lance aucune
+mission. Son résultat est expérimental et nécessite votre validation.
+Voir le [raccordement privé et ses limites](LAYA.md), y compris lorsque la
+console est hébergée sur Linux. Aucun téléchargement de modèle automatique.
+
 Chaque instance possède sa base, ses secrets et ses fournisseurs. Pour héberger
 la vôtre, utilisez un compte système dédié, un proxy HTTPS, un stockage privé
 et des sauvegardes. La console n’a pas d’isolation par utilisateur : sa clé donne

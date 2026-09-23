@@ -61,6 +61,23 @@ updateLabels();
 let seededTitle = '', seededBrief = '', authenticated = false;
 let detailMissionId = null;
 let sessionGeneration = 0;
+let layaRevision = 0, layaPending = false, layaState = null;
+function renderLaya() {
+  const result = $('laya-result'); result.replaceChildren();
+  $('laya-suggest').disabled = layaPending;
+  result.setAttribute('aria-busy', String(layaPending));
+  if (!layaState) return;
+  if (layaState.status !== 'suggestion') { result.append(el('p',tr('laya.' + layaState.status),'hint')); return; }
+  const category = layaState.category;
+  result.append(el('strong',tr('laya.focus', {focus:tr('laya.' + category)})), el('p',tr('laya.guide.' + category)), el('p',tr('laya.caution'),'hint'));
+  const apply = el('button',tr('laya.apply'),'quiet'); apply.type = 'button';
+  apply.onclick = () => {
+    $('brief').value = $('brief').value.trim() + '\n\n' + tr('laya.append', {focus:tr('laya.guide.' + category)});
+    layaRevision++; layaState = {status:'applied'}; renderLaya(); $('brief').focus();
+  };
+  result.append(apply);
+}
+function clearLaya() { layaRevision++; layaState = null; renderLaya(); }
 function guardSession(generation) {
   if (generation !== sessionGeneration) throw new DOMException('Obsolete session', 'AbortError');
 }
@@ -111,6 +128,7 @@ async function api(path = '', body) {
 }
 function logout(preserveLogin = false) {
   sessionGeneration++; token = ''; authenticated = false; busy = false;
+  layaPending = false; clearLaya(); $('laya-assist').hidden = true;
   sessionStorage.removeItem('agora-operator'); sessionStorage.removeItem('agora-project');
   notice(''); $('keyfile').value = '';
   $('login-error')?.remove();
@@ -135,6 +153,7 @@ async function refresh(force = false) {
   if (!authenticated) { $('login-error')?.remove(); $('welcome').hidden = true; $('login').hidden = true; $('workspace').hidden = false; authenticated = true; }
   $('logout').hidden = false; $('back-workspace').hidden = false;
   agentLabels = Object.fromEntries(data.agents.map(a => [a.id,a.label]));
+  $('laya-assist').hidden = data.laya?.configured !== true;
   $('connections-status').textContent = data.agents.length ? tr('agentsConfigured', {count:data.agents.length}) : tr('agentsNotConfigured');
   if (!$('agents').children.length) for (const a of data.agents) {
     const l = el('label', undefined, 'agent'), c = el('input'), t = el('span', a.label);
@@ -155,6 +174,7 @@ async function refresh(force = false) {
     if (!targets.some(t => t.id === projectFilter)) projectFilter = 'all';
     $('project-filter').value = projectFilter;
     $('target').value = targets.some(t => t.id === previousTarget) ? previousTarget : projectFilter !== 'all' ? projectFilter : targets[0]?.id || '';
+    if ($('target').value !== previousTarget) clearLaya();
   }
   if (!formSeeded && $('target').selectedOptions.length) {
     seededTitle = seedTitle(); seededBrief = tr('seedBrief');
@@ -389,10 +409,31 @@ $('chat-form').onsubmit = async e => {
 };
 $('ask-agents').onclick = () => {
   if (!prepareMission()) return;
+  clearLaya();
   $('brief').value = $('chat-body').value.trim() || tr('chatBrief'); $('brief').focus();
 };
-$('target').onchange = () => { if (!$('title').value || $('title').value === seededTitle) { seededTitle = seedTitle(); $('title').value = seededTitle; } };
+$('brief').addEventListener('input', clearLaya);
+$('laya-suggest').onclick = async () => {
+  if (layaPending || !authenticated) return;
+  const brief = $('brief').value.trim(), target = $('target').value;
+  const generation = sessionGeneration, revision = ++layaRevision;
+  if (brief.length < 10 || brief.length > 1200) { layaState = {status:'length'}; renderLaya(); return; }
+  layaPending = true; layaState = {status:'loading'}; renderLaya();
+  try {
+    const result = await api('/laya/suggestions', {brief});
+    guardSession(generation);
+    if (revision !== layaRevision || target !== $('target').value || brief !== $('brief').value.trim()) return;
+    if (!['code','ux','product'].includes(result.category) || result.engine !== 'laya-coreml' || result.experimental !== true) throw Error('Invalid suggestion');
+    layaState = {status:'suggestion', category:result.category};
+  } catch (error) {
+    if (generation === sessionGeneration && revision === layaRevision) layaState = {status:'unavailable'};
+  } finally {
+    if (generation === sessionGeneration) { layaPending = false; renderLaya(); }
+  }
+};
+$('target').onchange = () => { clearLaya(); if (!$('title').value || $('title').value === seededTitle) { seededTitle = seedTitle(); $('title').value = seededTitle; } };
 $('project-filter').onchange = () => {
+  clearLaya();
   projectFilter = $('project-filter').value; sessionStorage.setItem('agora-project',projectFilter);
   if (projectFilter !== 'all') { $('target').value = projectFilter; $('target').onchange(); }
   selected = null; detailSnapshot = ''; refresh(true).catch(e => reportError(e));
@@ -469,6 +510,7 @@ document.addEventListener('agora:language', () => {
     if ($('brief').value === seededBrief) { seededBrief = tr('seedBrief'); $('brief').value = seededBrief; }
   }
   for (const node of document.querySelectorAll('[data-provider-type]')) node.textContent = providerType(node.dataset.providerType);
+  renderLaya();
   listSnapshot = detailSnapshot = chatSnapshot = targetsSnapshot = '';
   if (token) refresh(true).catch(e => reportError(e));
 });
