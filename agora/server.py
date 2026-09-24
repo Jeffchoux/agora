@@ -92,6 +92,9 @@ class Guard:
             "/landing.css",
             "/decisions.js",
             "/decisions.css",
+            "/catalog.js",
+            "/catalog.css",
+            "/providers.json",
             "/health",
             "/.well-known/agent-card.json",
         }

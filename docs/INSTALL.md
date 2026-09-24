@@ -10,6 +10,10 @@ vos clés API. Les fichiers existants ne sont pas remplacés. Ne les ajoutez pas
 
 ## Choisir les agents
 
+Dans la navigation, ouvrez **Modèles & connexions** : catalogue, recherche,
+sélection de plusieurs modèles et export sans clés. La commande `import-agents`
+fusionne cette sélection sans remplacer vos profils. [Parcours et limites](CATALOG.md).
+
 **Anthropic / Claude** : [brancher plusieurs modèles par API ou abonnement](ANTHROPIC.md).
 Les deux accès sont distincts : Max/Pro ne finance pas l'API.
 

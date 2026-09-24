@@ -1,5 +1,9 @@
 # Run your own AGORA
 
+Use **Models & connections** in the navigation to browse providers, choose models
+and export a key-free configuration. `import-agents` merges it without replacing
+existing profiles. See the [catalogue guide and limitations](CATALOG.md).
+
 [Français](INSTALL.md) · [Back to README](../README.md)
 
 **Anthropic / Claude**: [connect multiple models via API or subscription](ANTHROPIC.md).

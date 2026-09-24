@@ -14,12 +14,15 @@
   <script src="decisions.js?v=20260921-decision" defer></script>
   <script src="landing.js?v=20260921-global" defer></script>
   <script src="ui.js?v=20260921-global" defer></script>
+  <link rel="stylesheet" href="catalog.css?v=20260924">
+  <script src="catalog.js?v=20260924" defer></script>
 </head>
 <body>
   <header class="site-header">
     <a href="./" class="brand" aria-label="Agora, home" data-fr-aria-label="Agora, accueil"><span class="mark">a</span> agora <span class="beta">OPEN SOURCE</span></a>
     <nav class="header-actions" aria-label="Main navigation" data-fr-aria-label="Navigation principale">
       <button id="show-welcome" class="quiet" data-fr="Découvrir">Explore</button>
+      <button type="button" class="quiet" data-open-catalog data-fr="Modèles & connexions">Models & connections</button>
       <a href="https://github.com/Jeffchoux/agora" target="_blank" rel="noopener noreferrer">GitHub</a>
       <label for="language" data-fr="Langue">Language</label><select id="language"><option value="en">English</option><option value="fr">Français</option></select>
       <button id="back-workspace" class="quiet" hidden data-fr="Espace de travail">Workspace</button>
@@ -99,6 +102,7 @@ uv run --no-sync python -m agora init</code></pre><p data-fr="Puis connectez vos
               <label for="decision-question" data-fr="Décision à résoudre (facultatif)">Decision to resolve (optional)</label><textarea id="decision-question" maxlength="500" rows="2" aria-describedby="decision-question-help" placeholder="Should we ship this onboarding flow?" data-fr-placeholder="Faut-il lancer ce parcours d’inscription ?"></textarea>
               <p id="decision-question-help" class="hint" data-fr="Posez la même proposition concrète à tous les agents. Ils préciseront leur position, les raisons et la prochaine vérification. Vous gardez la décision finale.">Ask every agent to assess the same concrete proposal. They will state their position, reasons and next check. The final decision stays yours.</p>
               <fieldset><legend data-fr="Agents à faire travailler (1 à 4)">Choose your agents (1 to 4)</legend><div id="agents" class="agents"></div></fieldset>
+              <button type="button" class="quiet" data-open-catalog data-fr="＋ Ajouter des modèles">＋ Add models</button>
               <details class="advanced"><summary data-fr="Limites de la mission">Mission limits</summary><div class="limits"><div><label for="calls" data-fr="Appels maximum">Maximum calls</label><input id="calls" type="number" min="1" max="12" value="4" required></div><div><label for="duration" data-fr="Durée maximum">Maximum duration</label><select id="duration"><option value="300">5 minutes</option><option value="600" selected>10 minutes</option><option value="1200">20 minutes</option><option value="1800">30 minutes</option></select></div></div></details>
               <p class="hint" data-fr="4 appels au plus, 10 minutes par défaut. Chaque tentative compte, même en cas d’échec. Les API peuvent être gratuites ou facturées selon votre compte ; Agora ne garantit pas leur gratuité et ne fournit aucun crédit. Les agents ne modifient pas le code.">Defaults: up to 4 calls and 10 minutes. Every attempt counts, including failures. APIs may be free or paid depending on your account; Agora does not guarantee free access or provide credits. Agents do not modify code.</p>
               <button class="primary" id="create" data-fr="Lancer la vérification">Start review</button>
@@ -108,6 +112,20 @@ uv run --no-sync python -m agora init</code></pre><p data-fr="Puis connectez vos
       </div>
     </div>
   </main>
+  <dialog id="model-catalog" aria-labelledby="catalog-title">
+    <div class="catalog-heading"><div><p class="eyebrow" data-fr="VOS COMPTES. VOTRE ÉQUIPE.">YOUR ACCOUNTS. YOUR TEAM.</p><h2 id="catalog-title" data-fr="Choisissez vos modèles">Choose your models</h2></div><button type="button" id="catalog-close" class="quiet" data-fr="Fermer">Close</button></div>
+    <p data-fr="Explorez les fournisseurs, cochez vos accès et indiquez les modèles de votre compte. Aucun abonnement ni crédit n’est fourni par Agora.">Explore providers, select your access routes and enter models available to your account. Agora supplies no subscriptions or credits.</p>
+    <p class="hint" data-fr="Catalogue extensible, non exhaustif. Connexion à configurer ≠ accès testé. Un abonnement à un chat ne donne pas automatiquement accès à son API. Aucun fournisseur n’est contacté ici.">An extensible directory, not an exhaustive list. Configurable connection ≠ tested access. A chat subscription does not automatically grant API access. No provider is contacted here.</p>
+    <div class="catalog-controls"><div><label for="catalog-search" data-fr="Fournisseur ou famille de modèles">Provider or model family</label><input type="search" id="catalog-search" autocomplete="off" placeholder="Claude, Qwen, Mistral…"></div><div><label for="catalog-filter" data-fr="Mode d’accès">Access route</label><select id="catalog-filter"><option value="all" data-fr="Tous">All</option><option value="api" data-fr="API · votre compte">API · your account</option><option value="subscription" data-fr="Abonnement / CLI">Subscription / CLI</option><option value="local" data-fr="Local · sans API payante">Local · no paid API</option><option value="pending" data-fr="Adaptateur à développer">Adapter needed</option></select></div></div>
+    <p id="catalog-status" role="status" aria-live="polite"></p><button id="catalog-retry" class="quiet" hidden data-fr="Réessayer">Retry</button>
+    <button type="button" id="catalog-review" class="quiet" disabled data-fr="Voir ma sélection">Review my selection</button>
+    <form id="catalog-form"><div id="catalog-list"></div>
+      <section class="catalog-export" aria-labelledby="catalog-next-title"><h3 id="catalog-next-title" data-fr="Branchez votre sélection">Connect your selection</h3><p id="catalog-selected" role="status" aria-live="polite"></p><button class="primary" id="catalog-download" disabled data-fr="Télécharger ma configuration sans clés">Download my key-free configuration</button><p id="catalog-error" role="alert" class="error"></p>
+        <ol><li data-fr="Téléchargez la sélection. Aucune clé n’est demandée dans cette page publique.">Download your selection. This public page never asks for keys.</li><li><span data-fr="Sur la machine de votre runner, depuis le dépôt Agora, importez le fichier téléchargé (adaptez son chemin) :">On your runner machine, from the Agora repository, import the downloaded file (adjust its path):</span><pre><code>uv run --no-sync python -m agora import-agents ~/Downloads/agora-agents.json --authorize-external</code></pre></li><li data-fr="Ajoutez vos clés dans le fichier privé credentials.json, ou connectez le CLI officiel avec votre compte. Redémarrez Agora ; les profils importés deviennent sélectionnables dans les missions.">Add your keys to the private credentials.json file, or sign in to the official CLI with your account. Restart Agora; imported profiles become selectable in missions.</li></ol>
+        <p class="hint" data-fr="L’import demande votre autorisation d’utiliser les accès externes, mais ne lance aucun appel. Il refuse les doublons, conserve vos agents et ne touche pas à vos clés. Lancez ensuite une mission bornée pour vérifier l’accès réel et la réponse du modèle.">Import explicitly authorizes external access, but makes no calls. It rejects duplicates, preserves your agents and never changes your keys. Then run a bounded mission to verify actual access and model output.</p><a href="https://github.com/Jeffchoux/agora/blob/main/docs/CATALOG.md" target="_blank" rel="noopener noreferrer" data-fr="Guide et limites des connexions ↗">Connection guide and limitations ↗</a>
+      </section>
+    </form>
+  </dialog>
   <footer>Agora <span data-fr="Les agents proposent. Vous gardez la décision.">Agents propose. You decide.</span></footer>
 </body>
 </html>

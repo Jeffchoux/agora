@@ -20,6 +20,18 @@ def install(app, store):
     laya = LayaBridge()
 
     # Explicit files only: never expose the static directory or a user-supplied path.
+    @app.get("/catalog.js")
+    def catalog_js():
+        return public_asset("catalog.js")
+
+    @app.get("/catalog.css")
+    def catalog_css():
+        return public_asset("catalog.css")
+
+    @app.get("/providers.json")
+    def providers_catalog():
+        return public_asset("providers.json")
+
     @app.get("/i18n.js")
     def i18n():
         return public_asset("i18n.js")
