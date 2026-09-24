@@ -14,7 +14,11 @@ def profiles(legacy):
     stat = path.stat()
     if stat.st_uid != os.getuid() or stat.st_mode & 0o077 or stat.st_size > 65536:
         raise ValueError("Agent configuration must be private, owned by the operator and bounded")
-    data = json.loads(path.read_text())
+    return validate_profiles(json.loads(path.read_text()))
+
+
+def validate_profiles(data):
+    """Validate already loaded profiles without accessing files or environment."""
     if not isinstance(data, dict) or len(data) > 32:
         raise ValueError("Expected at most 32 agent profiles")
     allowed = {"label", "provider", "model", "endpoint", "key_env", "credential_file", "operator_authorized", "max_tokens"}

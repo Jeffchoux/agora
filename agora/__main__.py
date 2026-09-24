@@ -16,6 +16,10 @@ def main():
     sub = p.add_subparsers(dest="cmd", required=True)
     setup = sub.add_parser("init", help="Create private local installation files")
     setup.add_argument("--directory", default=str(Path.home() / ".config" / "agora"))
+    imported = sub.add_parser("import-agents", help="Import non-secret profiles without replacing existing agents")
+    imported.add_argument("path")
+    imported.add_argument("--directory", default=str(Path.home() / ".config" / "agora"))
+    imported.add_argument("--authorize-external", action="store_true", help="Authorize use of your own external provider accounts")
     start = sub.add_parser("start", help="Start your local console and mission runner together")
     start.add_argument("--directory", default=str(Path.home() / ".config" / "agora"))
     start.add_argument("--port", type=int, default=8768)
@@ -45,6 +49,15 @@ def main():
     r.add_argument("agent")
     a = p.parse_args()
     os.umask(0o077)
+    if a.cmd == "import-agents":
+        from agora.import_profiles import ImportError, import_agents
+
+        try:
+            count = import_agents(a.path, a.directory, a.authorize_external)
+        except ImportError as error:
+            p.error(str(error))
+        print(f"Imported {count} agent profile(s). Restart Agora to load them. No provider was contacted.")
+        return
     if a.cmd == "start":
         from agora.launcher import StartupError, start_local
 

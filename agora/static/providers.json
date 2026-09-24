@@ -1,0 +1,407 @@
+{
+  "reviewed": "2026-09-24",
+  "entries": [
+    {
+      "id": "claude-subscription",
+      "name": "Claude Code",
+      "families": "Claude · haiku, sonnet, opus, explicit CLI model IDs",
+      "provider": "claude-cli",
+      "docs": "https://code.claude.com/docs/en/overview",
+      "mode": "subscription",
+      "note": {
+        "en": "Official CLI on the runner, signed in to your eligible subscription. No API key or automatic paid-API fallback. No account supplied by Agora.",
+        "fr": "CLI officiel sur le runner, connecté à votre abonnement éligible. Sans clé API ni repli automatique vers une API payante. Aucun compte fourni par Agora."
+      }
+    },
+    {
+      "id": "codex-subscription",
+      "name": "OpenAI Codex",
+      "families": "Codex · models available to your CLI account",
+      "provider": "codex-cli",
+      "docs": "https://developers.openai.com/codex/auth/",
+      "mode": "subscription",
+      "note": {
+        "en": "Official CLI on the runner, signed in to your eligible subscription. No API key or automatic paid-API fallback. No account supplied by Agora.",
+        "fr": "CLI officiel sur le runner, connecté à votre abonnement éligible. Sans clé API ni repli automatique vers une API payante. Aucun compte fourni par Agora."
+      }
+    },
+    {
+      "id": "anthropic-api",
+      "name": "Anthropic API",
+      "families": "Claude · Haiku, Sonnet, Opus and account model IDs",
+      "mode": "api",
+      "provider": "anthropic",
+      "key_env": "ANTHROPIC_API_KEY",
+      "docs": "https://platform.claude.com/docs/en/api/messages/create",
+      "note": {
+        "en": "Native Messages adapter. API billed separately from Claude subscriptions. The model must return the requested JSON within the configured token limit.",
+        "fr": "Adaptateur natif Messages. API facturée séparément des abonnements Claude. Le modèle doit produire le JSON demandé dans la limite de tokens configurée."
+      }
+    },
+    {
+      "id": "openai-api",
+      "name": "OpenAI API",
+      "families": "GPT, reasoning models",
+      "mode": "api",
+      "provider": "openai-compatible",
+      "endpoint": "https://api.openai.com/v1",
+      "key_env": "OPENAI_API_KEY",
+      "docs": "https://developers.openai.com/api/reference/resources/chat",
+      "note": {
+        "en": "Chat Completions adapter. Select a model supporting JSON object output and max_tokens. Account access, pricing and model compatibility must be checked; not live-tested here.",
+        "fr": "Adaptateur Chat Completions. Choisissez un modèle acceptant JSON object et max_tokens. Accès, tarifs et compatibilité du modèle à vérifier ; non testé en direct ici."
+      }
+    },
+    {
+      "id": "mistral-api",
+      "name": "Mistral API",
+      "families": "Mistral, Codestral, Ministral",
+      "mode": "api",
+      "provider": "openai-compatible",
+      "endpoint": "https://api.mistral.ai/v1",
+      "key_env": "MISTRAL_API_KEY",
+      "docs": "https://docs.mistral.ai/resources/migration-guides",
+      "note": {
+        "en": "Chat Completions adapter. Select a model supporting JSON object output and max_tokens. Account access, pricing and model compatibility must be checked; not live-tested here.",
+        "fr": "Adaptateur Chat Completions. Choisissez un modèle acceptant JSON object et max_tokens. Accès, tarifs et compatibilité du modèle à vérifier ; non testé en direct ici."
+      }
+    },
+    {
+      "id": "gemini-api",
+      "name": "Google Gemini API",
+      "families": "Gemini, Gemma",
+      "mode": "api",
+      "provider": "openai-compatible",
+      "endpoint": "https://generativelanguage.googleapis.com/v1beta/openai",
+      "key_env": "GEMINI_API_KEY",
+      "docs": "https://ai.google.dev/gemini-api/docs/openai",
+      "note": {
+        "en": "Chat Completions adapter. Select a model supporting JSON object output and max_tokens. Account access, pricing and model compatibility must be checked; not live-tested here.",
+        "fr": "Adaptateur Chat Completions. Choisissez un modèle acceptant JSON object et max_tokens. Accès, tarifs et compatibilité du modèle à vérifier ; non testé en direct ici."
+      }
+    },
+    {
+      "id": "groq-api",
+      "name": "Groq",
+      "families": "Llama, Qwen, open models",
+      "mode": "api",
+      "provider": "openai-compatible",
+      "endpoint": "https://api.groq.com/openai/v1",
+      "key_env": "GROQ_API_KEY",
+      "docs": "https://console.groq.com/docs/openai",
+      "note": {
+        "en": "Chat Completions adapter. Select a model supporting JSON object output and max_tokens. Account access, pricing and model compatibility must be checked; not live-tested here.",
+        "fr": "Adaptateur Chat Completions. Choisissez un modèle acceptant JSON object et max_tokens. Accès, tarifs et compatibilité du modèle à vérifier ; non testé en direct ici."
+      }
+    },
+    {
+      "id": "deepseek-api",
+      "name": "DeepSeek",
+      "families": "DeepSeek",
+      "mode": "api",
+      "provider": "openai-compatible",
+      "endpoint": "https://api.deepseek.com",
+      "key_env": "DEEPSEEK_API_KEY",
+      "docs": "https://api-docs.deepseek.com/guides/json_mode/",
+      "note": {
+        "en": "Chat Completions adapter. Select a model supporting JSON object output and max_tokens. Account access, pricing and model compatibility must be checked; not live-tested here.",
+        "fr": "Adaptateur Chat Completions. Choisissez un modèle acceptant JSON object et max_tokens. Accès, tarifs et compatibilité du modèle à vérifier ; non testé en direct ici."
+      }
+    },
+    {
+      "id": "xai-api",
+      "name": "xAI API",
+      "families": "Grok",
+      "mode": "api",
+      "provider": "openai-compatible",
+      "endpoint": "https://api.x.ai/v1",
+      "key_env": "XAI_API_KEY",
+      "docs": "https://docs.x.ai/developers/rest-api-reference/inference/chat-completions",
+      "note": {
+        "en": "Chat Completions adapter. Select a model supporting JSON object output and max_tokens. Account access, pricing and model compatibility must be checked; not live-tested here.",
+        "fr": "Adaptateur Chat Completions. Choisissez un modèle acceptant JSON object et max_tokens. Accès, tarifs et compatibilité du modèle à vérifier ; non testé en direct ici."
+      }
+    },
+    {
+      "id": "together-api",
+      "name": "Together AI",
+      "families": "Llama, Qwen, DeepSeek, open models",
+      "mode": "api",
+      "provider": "openai-compatible",
+      "endpoint": "https://api.together.ai/v1",
+      "key_env": "TOGETHER_API_KEY",
+      "docs": "https://docs.together.ai/docs/inference/openai-compatibility",
+      "note": {
+        "en": "Chat Completions adapter. Select a model supporting JSON object output and max_tokens. Account access, pricing and model compatibility must be checked; not live-tested here.",
+        "fr": "Adaptateur Chat Completions. Choisissez un modèle acceptant JSON object et max_tokens. Accès, tarifs et compatibilité du modèle à vérifier ; non testé en direct ici."
+      }
+    },
+    {
+      "id": "fireworks-api",
+      "name": "Fireworks AI",
+      "families": "Llama, Qwen, DeepSeek, open models",
+      "mode": "api",
+      "provider": "openai-compatible",
+      "endpoint": "https://api.fireworks.ai/inference/v1",
+      "key_env": "FIREWORKS_API_KEY",
+      "docs": "https://docs.fireworks.ai/tools-sdks/openai-compatibility",
+      "note": {
+        "en": "Chat Completions adapter. Select a model supporting JSON object output and max_tokens. Account access, pricing and model compatibility must be checked; not live-tested here.",
+        "fr": "Adaptateur Chat Completions. Choisissez un modèle acceptant JSON object et max_tokens. Accès, tarifs et compatibilité du modèle à vérifier ; non testé en direct ici."
+      }
+    },
+    {
+      "id": "cerebras-api",
+      "name": "Cerebras",
+      "families": "Open models",
+      "mode": "api",
+      "provider": "openai-compatible",
+      "endpoint": "https://api.cerebras.ai/v1",
+      "key_env": "CEREBRAS_API_KEY",
+      "docs": "https://inference-docs.cerebras.ai/resources/openai",
+      "note": {
+        "en": "Chat Completions adapter. Select a model supporting JSON object output and max_tokens. Account access, pricing and model compatibility must be checked; not live-tested here.",
+        "fr": "Adaptateur Chat Completions. Choisissez un modèle acceptant JSON object et max_tokens. Accès, tarifs et compatibilité du modèle à vérifier ; non testé en direct ici."
+      }
+    },
+    {
+      "id": "sambanova-api",
+      "name": "SambaNova",
+      "families": "Open models",
+      "mode": "api",
+      "provider": "openai-compatible",
+      "endpoint": "https://api.sambanova.ai/v1",
+      "key_env": "SAMBANOVA_API_KEY",
+      "docs": "https://docs.sambanova.ai/docs/en/get-started/api-keys-urls",
+      "note": {
+        "en": "Chat Completions adapter. Select a model supporting JSON object output and max_tokens. Account access, pricing and model compatibility must be checked; not live-tested here.",
+        "fr": "Adaptateur Chat Completions. Choisissez un modèle acceptant JSON object et max_tokens. Accès, tarifs et compatibilité du modèle à vérifier ; non testé en direct ici."
+      }
+    },
+    {
+      "id": "openrouter-api",
+      "name": "OpenRouter",
+      "families": "Multi-provider model catalogue",
+      "mode": "api",
+      "provider": "openai-compatible",
+      "endpoint": "https://openrouter.ai/api/v1",
+      "key_env": "OPENROUTER_API_KEY",
+      "docs": "https://openrouter.ai/docs/quickstart",
+      "note": {
+        "en": "Chat Completions adapter. Select a model supporting JSON object output and max_tokens. Account access, pricing and model compatibility must be checked; not live-tested here.",
+        "fr": "Adaptateur Chat Completions. Choisissez un modèle acceptant JSON object et max_tokens. Accès, tarifs et compatibilité du modèle à vérifier ; non testé en direct ici."
+      }
+    },
+    {
+      "id": "huggingface-api",
+      "name": "Hugging Face",
+      "families": "Llama, Qwen, Gemma, DeepSeek, open models",
+      "mode": "api",
+      "provider": "openai-compatible",
+      "endpoint": "https://router.huggingface.co/v1",
+      "key_env": "HF_TOKEN",
+      "docs": "https://huggingface.co/docs/inference-providers/tasks/chat-completion",
+      "note": {
+        "en": "Chat Completions adapter. Select a model supporting JSON object output and max_tokens. Account access, pricing and model compatibility must be checked; not live-tested here.",
+        "fr": "Adaptateur Chat Completions. Choisissez un modèle acceptant JSON object et max_tokens. Accès, tarifs et compatibilité du modèle à vérifier ; non testé en direct ici."
+      }
+    },
+    {
+      "id": "cohere-api",
+      "name": "Cohere",
+      "families": "Command",
+      "mode": "api",
+      "provider": "openai-compatible",
+      "endpoint": "https://api.cohere.ai/compatibility/v1",
+      "key_env": "COHERE_API_KEY",
+      "docs": "https://docs.cohere.com/docs/compatibility-api",
+      "note": {
+        "en": "Chat Completions adapter. Select a model supporting JSON object output and max_tokens. Account access, pricing and model compatibility must be checked; not live-tested here.",
+        "fr": "Adaptateur Chat Completions. Choisissez un modèle acceptant JSON object et max_tokens. Accès, tarifs et compatibilité du modèle à vérifier ; non testé en direct ici."
+      }
+    },
+    {
+      "id": "nvidia-api",
+      "name": "NVIDIA NIM",
+      "families": "Nemotron, open models",
+      "mode": "api",
+      "provider": "openai-compatible",
+      "endpoint": "https://integrate.api.nvidia.com/v1",
+      "key_env": "NVIDIA_API_KEY",
+      "docs": "https://docs.api.nvidia.com/nim/reference/llm-apis",
+      "note": {
+        "en": "Chat Completions adapter. Select a model supporting JSON object output and max_tokens. Account access, pricing and model compatibility must be checked; not live-tested here.",
+        "fr": "Adaptateur Chat Completions. Choisissez un modèle acceptant JSON object et max_tokens. Accès, tarifs et compatibilité du modèle à vérifier ; non testé en direct ici."
+      }
+    },
+    {
+      "id": "moonshot-api",
+      "name": "Moonshot AI",
+      "families": "Kimi",
+      "mode": "api",
+      "provider": "openai-compatible",
+      "endpoint": "https://api.moonshot.ai/v1",
+      "key_env": "MOONSHOT_API_KEY",
+      "docs": "https://platform.kimi.ai/docs/overview",
+      "note": {
+        "en": "Chat Completions adapter. Select a model supporting JSON object output and max_tokens. Account access, pricing and model compatibility must be checked; not live-tested here.",
+        "fr": "Adaptateur Chat Completions. Choisissez un modèle acceptant JSON object et max_tokens. Accès, tarifs et compatibilité du modèle à vérifier ; non testé en direct ici."
+      }
+    },
+    {
+      "id": "zai-api",
+      "name": "Z.ai API",
+      "families": "GLM",
+      "mode": "api",
+      "provider": "openai-compatible",
+      "endpoint": "https://api.z.ai/api/paas/v4",
+      "key_env": "ZAI_API_KEY",
+      "docs": "https://docs.z.ai/guides/overview/quick-start",
+      "note": {
+        "en": "Chat Completions adapter. Select a model supporting JSON object output and max_tokens. Account access, pricing and model compatibility must be checked; not live-tested here.",
+        "fr": "Adaptateur Chat Completions. Choisissez un modèle acceptant JSON object et max_tokens. Accès, tarifs et compatibilité du modèle à vérifier ; non testé en direct ici."
+      }
+    },
+    {
+      "id": "ollama-local",
+      "name": "Ollama · local",
+      "families": "Llama, Qwen, Gemma, DeepSeek, Phi, Mistral · installed models",
+      "mode": "local",
+      "provider": "ollama",
+      "docs": "https://docs.ollama.com/api/chat",
+      "note": {
+        "en": "Already-installed local models supporting structured JSON output. Runs on your hardware; no model download or cloud route enabled by this selection.",
+        "fr": "Modèles locaux déjà installés acceptant la sortie JSON structurée. Utilise votre matériel ; aucun téléchargement ni accès cloud activé par cette sélection."
+      }
+    },
+    {
+      "id": "openrouter-free",
+      "name": "OpenRouter · free routes",
+      "families": "Explicit :free model routes",
+      "mode": "api",
+      "provider": "openrouter-free",
+      "key_env": "OPENROUTER_API_KEY",
+      "docs": "https://openrouter.ai/docs/guides/routing/model-variants/free",
+      "note": {
+        "en": "Use a model ID ending in :free. Agora checks zero input/output token pricing before each call and forbids paid fallback. Capacity and rate limits still apply.",
+        "fr": "Utilisez un identifiant se terminant par :free. Agora vérifie le prix nul des tokens avant chaque appel et interdit le repli payant. Capacité et quotas restent limités."
+      }
+    },
+    {
+      "id": "alibaba-api",
+      "name": "Alibaba Cloud Model Studio",
+      "families": "Qwen · DashScope",
+      "mode": "api",
+      "provider": "openai-compatible",
+      "custom_endpoint": true,
+      "key_env": "DASHSCOPE_API_KEY",
+      "docs": "https://www.alibabacloud.com/help/en/model-studio/compatibility-of-openai-with-dashscope",
+      "note": {
+        "en": "Use the HTTPS base URL for your workspace and region from official documentation. Your API key must match that region. JSON-compatible models only.",
+        "fr": "Indiquez l’URL HTTPS de votre workspace et région depuis la documentation officielle. La clé doit correspondre à cette région. Modèles compatibles JSON uniquement."
+      }
+    },
+    {
+      "id": "custom-api",
+      "name": "Custom OpenAI-compatible API",
+      "families": "Other providers · hosted vLLM, SGLang, custom gateways",
+      "mode": "api",
+      "provider": "openai-compatible",
+      "custom_endpoint": true,
+      "key_env": "AGORA_MODEL_KEY",
+      "docs": "https://github.com/Jeffchoux/agora/blob/main/docs/CATALOG.md",
+      "note": {
+        "en": "Advanced: trusted HTTPS endpoint accepting Bearer authentication, /chat/completions, max_tokens and JSON object output. Not a universal adapter; check its behaviour before sending project data.",
+        "fr": "Avancé : endpoint HTTPS de confiance acceptant Bearer, /chat/completions, max_tokens et JSON object. Pas un adaptateur universel ; vérifiez son comportement avant d’envoyer un projet."
+      }
+    },
+    {
+      "id": "gemini-cli",
+      "name": "Gemini CLI / Google subscription",
+      "families": "Gemini",
+      "mode": "pending",
+      "docs": "https://github.com/google-gemini/gemini-cli",
+      "note": {
+        "en": "Listed for discovery, not connected by this release. This access route needs a dedicated adapter or further verification. A consumer subscription is not an API credential.",
+        "fr": "Référencé pour découverte, non connecté par cette version. Cet accès nécessite un adaptateur dédié ou une vérification supplémentaire. Un abonnement grand public n’est pas une clé API."
+      }
+    },
+    {
+      "id": "perplexity",
+      "name": "Perplexity",
+      "families": "Sonar",
+      "mode": "pending",
+      "docs": "https://docs.perplexity.ai/docs/sonar/quickstart",
+      "note": {
+        "en": "Listed for discovery, not connected by this release. This access route needs a dedicated adapter or further verification. A consumer subscription is not an API credential.",
+        "fr": "Référencé pour découverte, non connecté par cette version. Cet accès nécessite un adaptateur dédié ou une vérification supplémentaire. Un abonnement grand public n’est pas une clé API."
+      }
+    },
+    {
+      "id": "ai21",
+      "name": "AI21",
+      "families": "Jamba",
+      "mode": "pending",
+      "docs": "https://docs.ai21.com/",
+      "note": {
+        "en": "Listed for discovery, not connected by this release. This access route needs a dedicated adapter or further verification. A consumer subscription is not an API credential.",
+        "fr": "Référencé pour découverte, non connecté par cette version. Cet accès nécessite un adaptateur dédié ou une vérification supplémentaire. Un abonnement grand public n’est pas une clé API."
+      }
+    },
+    {
+      "id": "bedrock",
+      "name": "Amazon Bedrock",
+      "families": "Claude, Nova, multi-provider models",
+      "mode": "pending",
+      "docs": "https://docs.aws.amazon.com/bedrock/",
+      "note": {
+        "en": "Listed for discovery, not connected by this release. This access route needs a dedicated adapter or further verification. A consumer subscription is not an API credential.",
+        "fr": "Référencé pour découverte, non connecté par cette version. Cet accès nécessite un adaptateur dédié ou une vérification supplémentaire. Un abonnement grand public n’est pas une clé API."
+      }
+    },
+    {
+      "id": "vertex",
+      "name": "Google Vertex AI",
+      "families": "Gemini, partner models",
+      "mode": "pending",
+      "docs": "https://cloud.google.com/vertex-ai/generative-ai/docs",
+      "note": {
+        "en": "Listed for discovery, not connected by this release. This access route needs a dedicated adapter or further verification. A consumer subscription is not an API credential.",
+        "fr": "Référencé pour découverte, non connecté par cette version. Cet accès nécessite un adaptateur dédié ou une vérification supplémentaire. Un abonnement grand public n’est pas une clé API."
+      }
+    },
+    {
+      "id": "azure",
+      "name": "Microsoft Azure AI / Foundry",
+      "families": "GPT, Phi, partner models",
+      "mode": "pending",
+      "docs": "https://learn.microsoft.com/azure/ai-foundry/",
+      "note": {
+        "en": "Listed for discovery, not connected by this release. This access route needs a dedicated adapter or further verification. A consumer subscription is not an API credential.",
+        "fr": "Référencé pour découverte, non connecté par cette version. Cet accès nécessite un adaptateur dédié ou une vérification supplémentaire. Un abonnement grand public n’est pas une clé API."
+      }
+    },
+    {
+      "id": "lmstudio",
+      "name": "LM Studio",
+      "families": "Local open models",
+      "mode": "pending",
+      "docs": "https://lmstudio.ai/docs/developer",
+      "note": {
+        "en": "Listed for discovery, not connected by this release. This access route needs a dedicated adapter or further verification. A consumer subscription is not an API credential.",
+        "fr": "Référencé pour découverte, non connecté par cette version. Cet accès nécessite un adaptateur dédié ou une vérification supplémentaire. Un abonnement grand public n’est pas une clé API."
+      }
+    },
+    {
+      "id": "zai-plan",
+      "name": "Z.ai Coding Plan",
+      "families": "GLM subscription",
+      "mode": "pending",
+      "docs": "https://docs.z.ai/",
+      "note": {
+        "en": "Listed for discovery, not connected by this release. This access route needs a dedicated adapter or further verification. A consumer subscription is not an API credential.",
+        "fr": "Référencé pour découverte, non connecté par cette version. Cet accès nécessite un adaptateur dédié ou une vérification supplémentaire. Un abonnement grand public n’est pas une clé API."
+      }
+    }
+  ]
+}
