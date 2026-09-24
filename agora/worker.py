@@ -105,6 +105,45 @@ def generate(config, prompt, images=()):
             )
             response.raise_for_status()
             text = response.json()["choices"][0]["message"]["content"]
+        elif config["provider"] == "anthropic":
+            if config.get("operator_authorized") is not True:
+                raise ValueError("operator must authorize own provider usage explicitly")
+            if config.get("endpoint", "https://api.anthropic.com/v1") != "https://api.anthropic.com/v1":
+                raise ValueError("Anthropic requires the official API endpoint")
+            max_tokens = config.get("max_tokens", 1024)
+            if type(max_tokens) is not int or not 1 <= max_tokens <= 16384:
+                raise ValueError("max_tokens must be an integer from 1 to 16384")
+            key = provider_key(config, "ANTHROPIC_API_KEY")
+            try:
+                response = http.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={"x-api-key": key, "anthropic-version": "2023-06-01"},
+                    json={
+                        "model": config["model"],
+                        "max_tokens": max_tokens,
+                        "system": "Return only a JSON object matching this schema, without Markdown: " + json.dumps(contribution_schema()),
+                        "messages": [{"role": "user", "content": prompt}],
+                    },
+                )
+            except httpx.RequestError:
+                raise ValueError("Anthropic request failed; check connection") from None
+            if response.status_code != 200:
+                raise ValueError(f"Anthropic request rejected (HTTP {response.status_code}); check API access, model and quota")
+            try:
+                data = response.json()
+                blocks = data["content"]
+                if data.get("stop_reason") != "end_turn" or not isinstance(blocks, list) or not blocks:
+                    raise ValueError()
+                if any(not isinstance(b, dict) or b.get("type") not in {"text", "thinking", "redacted_thinking"} for b in blocks):
+                    raise ValueError()
+                texts = [b.get("text") for b in blocks if b["type"] == "text"]
+                if not texts or any(not isinstance(t, str) for t in texts):
+                    raise ValueError()
+                text = "".join(texts)
+                # No fallback or retry: an incomplete/invalid answer is not a contribution.
+                return Contribution.model_validate_json(text)
+            except (ValueError, KeyError, TypeError, AttributeError):
+                raise ValueError("Anthropic returned an incomplete or invalid contribution") from None
         elif config["provider"] == "openai-compatible":
             if config.get("operator_authorized") is not True:
                 raise ValueError(

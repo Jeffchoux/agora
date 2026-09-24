@@ -17,8 +17,8 @@ def profiles(legacy):
     data = json.loads(path.read_text())
     if not isinstance(data, dict) or len(data) > 32:
         raise ValueError("Expected at most 32 agent profiles")
-    allowed = {"label", "provider", "model", "endpoint", "key_env", "credential_file", "operator_authorized"}
-    providers = {"ollama", "codex-cli", "claude-cli", "grok-cli", "openai-compatible", "openrouter-free"}
+    allowed = {"label", "provider", "model", "endpoint", "key_env", "credential_file", "operator_authorized", "max_tokens"}
+    providers = {"ollama", "codex-cli", "claude-cli", "grok-cli", "anthropic", "openai-compatible", "openrouter-free"}
     for name, profile in data.items():
         if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,39}", name) or not isinstance(profile, dict):
             raise ValueError("Invalid agent profile")
@@ -30,4 +30,8 @@ def profiles(legacy):
             raise ValueError("Explicit authorization required for external agents")
         if profile["provider"] == "openai-compatible" and not str(profile.get("endpoint", "")).startswith("https://"):
             raise ValueError("HTTPS endpoint required")
+        if profile["provider"] == "anthropic" and profile.get("endpoint", "https://api.anthropic.com/v1") != "https://api.anthropic.com/v1":
+            raise ValueError("Anthropic requires the official API endpoint")
+        if "max_tokens" in profile and (profile["provider"] != "anthropic" or type(profile["max_tokens"]) is not int or not 1 <= profile["max_tokens"] <= 16384):
+            raise ValueError("max_tokens requires Anthropic and an integer from 1 to 16384")
     return data

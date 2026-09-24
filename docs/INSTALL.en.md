@@ -2,6 +2,9 @@
 
 [Français](INSTALL.md) · [Back to README](../README.md)
 
+**Anthropic / Claude**: [connect multiple models via API or subscription](ANTHROPIC.md).
+These are separate connections: Max/Pro does not pay for API requests.
+
 ## 1. Install and initialize
 
 On macOS or Linux, with Python 3.11+ and uv installed:

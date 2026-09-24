@@ -1,6 +1,8 @@
 # Participants et fournisseurs
 
 Pour configurer les agents de votre console, commencez par [INSTALL.md](INSTALL.md).
+Le connecteur natif `anthropic` et les profils Claude par abonnement sont décrits
+dans [ANTHROPIC.md](ANTHROPIC.md), avec séparation des clés et de la facturation.
 Les configurations ci-dessous concernent également les participants A2A autonomes.
 
 Les workers parlent à Agora par HTTPS depuis leur propre machine. Le VPS héberge
