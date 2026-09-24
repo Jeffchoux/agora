@@ -268,7 +268,7 @@ class Missions:
                         turn["recipient"] = None
                     prior.append(turn)
             result["next_agent"] = result["agents"][result["calls"] % len(result["agents"])] if result["status"] in {"draft", "queued", "running"} and result["calls"] < result["max_calls"] else None
-            result["api_budget_usd"] = None if any(self.profiles.get(a, {}).get("provider") in {"openai-compatible", "openrouter-free"} for a in result["agents"]) else 0
+            result["api_budget_usd"] = None if any(self.profiles.get(a, {}).get("provider") in {"anthropic", "openai-compatible", "openrouter-free"} for a in result["agents"]) else 0
             context = db.execute(
                 "SELECT target,evidence FROM mission_context WHERE mission=?", (mid,)
             ).fetchone()

@@ -80,7 +80,7 @@ def install(app, store):
                 {
                     "id": k,
                     "label": v["label"],
-                    "type": "Local" if v["provider"] == "ollama" else "Votre API · tarif du fournisseur" if v["provider"] in {"openai-compatible", "openrouter-free"} else "Votre abonnement",
+                    "type": "Local" if v["provider"] == "ollama" else "Votre API · tarif du fournisseur" if v["provider"] in {"anthropic", "openai-compatible", "openrouter-free"} else "Votre abonnement",
                 }
                 for k, v in missions.profiles.items()
             ],

@@ -10,6 +10,9 @@ vos clés API. Les fichiers existants ne sont pas remplacés. Ne les ajoutez pas
 
 ## Choisir les agents
 
+**Anthropic / Claude** : [brancher plusieurs modèles par API ou abonnement](ANTHROPIC.md).
+Les deux accès sont distincts : Max/Pro ne finance pas l'API.
+
 Éditez `agents.json`. Exemple avec un modèle déjà installé dans Ollama et un
 Claude CLI déjà connecté à votre propre abonnement :
 
