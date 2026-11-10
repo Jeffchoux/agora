@@ -144,3 +144,21 @@ sources facultatives. Pour l’installation historique uniquement,
 Cette option n’est jamais activée par défaut. `AGORA_AGENTS_FILE` remplace les
 profils historiques lorsqu’il est défini. N’exécutez pas les scripts `ops/`
 du mainteneur pour installer votre propre serveur.
+
+## Optional local queue worker
+
+`python -m agora.local_queue_worker` can process an existing compatible
+transactional queue using the local Ollama `ministral-3:3b` model. It requires
+an absolute queue path, an exact task prefix and a project pause path. It claims
+only Mistral tasks matching that prefix; Claude and Codex tasks remain pending.
+Responses are recorded as data and never executed. The process does not create
+tasks, send messages, or interpret model output. An operator must assess results.
+
+The worker limits its scope to four claims per UTC day and one per hour, counts
+existing claims for the same prefix, checks available memory and disk, and
+marks interrupted calls failed without retry. These limits do not control calls
+from other tools or unrelated prefixes. It respects the global and project
+pause files by default. `--project-pause-exception` is only for an explicitly
+authorised individual project; it does not remove or change the global pause.
+An in-flight call may finish after a pause is created. Use a dedicated locked
+down system service if unattended execution is authorised.
