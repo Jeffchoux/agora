@@ -89,3 +89,33 @@ def test_claim_is_transactional_between_connections(queue, tmp_path):
 def test_missing_queue_refused(tmp_path):
     with pytest.raises(ValueError):
         w.connect(tmp_path / 'missing.sqlite')
+
+
+def test_output_limit_failure_is_distinct_and_does_not_leak(queue):
+    add(queue, 'a')
+    def incomplete(_):
+        raise w.IncompleteResponse('private response content')
+    assert w.cycle(queue, PREFIX, (), lambda: True, incomplete, 1036800) == 'failed'
+    result = queue.execute("SELECT result FROM tasks WHERE id='a'").fetchone()[0]
+    assert 'limite de sortie' in result
+    assert 'private response content' not in result
+
+
+def test_local_call_requests_bounded_output_and_rejects_truncation(monkeypatch):
+    import json
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def read(self, limit):
+            assert limit == 65537
+            return json.dumps({'message': {'content': 'Réponse'}, 'done_reason': 'length'}).encode()
+    class Opener:
+        def open(self, request, timeout):
+            payload = json.loads(request.data)
+            assert payload['options']['num_predict'] == 400
+            assert payload['options']['num_thread'] == 2
+            assert timeout == 150
+            return Response()
+    monkeypatch.setattr(w.urllib.request, 'build_opener', lambda *args: Opener())
+    with pytest.raises(w.IncompleteResponse):
+        w.call_local('Exemple')
