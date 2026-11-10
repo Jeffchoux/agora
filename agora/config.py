@@ -21,7 +21,7 @@ def validate_profiles(data):
     """Validate already loaded profiles without accessing files or environment."""
     if not isinstance(data, dict) or len(data) > 32:
         raise ValueError("Expected at most 32 agent profiles")
-    allowed = {"label", "provider", "model", "endpoint", "key_env", "credential_file", "operator_authorized", "max_tokens"}
+    allowed = {"label", "provider", "model", "endpoint", "key_env", "credential_file", "operator_authorized", "max_tokens", "specialty"}
     providers = {"ollama", "codex-cli", "claude-cli", "grok-cli", "anthropic", "openai-compatible", "openrouter-free"}
     for name, profile in data.items():
         if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,39}", name) or not isinstance(profile, dict):
@@ -30,6 +30,8 @@ def validate_profiles(data):
             raise ValueError("Unsupported agent configuration; use credential_file for secrets")
         if any(not isinstance(profile.get(k), str) or not 1 <= len(profile[k]) <= 120 for k in ("label", "model")):
             raise ValueError("Agent label and model required")
+        if "specialty" in profile and (not isinstance(profile["specialty"], str) or not 1 <= len(profile["specialty"].strip()) <= 160):
+            raise ValueError("Agent specialty must be 1–160 characters")
         if profile["provider"] != "ollama" and profile.get("operator_authorized") is not True:
             raise ValueError("Explicit authorization required for external agents")
         if profile["provider"] == "openai-compatible" and not str(profile.get("endpoint", "")).startswith("https://"):

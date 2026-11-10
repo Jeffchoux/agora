@@ -87,6 +87,11 @@ def step(missions):
     if profile is None:
         missions.finish(reservation["turn"])
         return True
+    specialty = profile.get("specialty", specialty)
+    if profile["provider"] == "ollama":
+        # These constraints come from the reservation, never from model output.
+        profile = dict(profile, expected_kind=reservation["expected_kind"],
+                       decision_required=bool(reservation["decision_question"]))
     if profile["provider"] == "codex-cli" and reservation["evidence"]:
         for item in reservation["evidence"].get("browser", []):
             width = item.get("viewport")

@@ -34,6 +34,12 @@ Agora ne copie et ne fournit aucune session d’abonnement. Les profils externes
 exigent `operator_authorized: true`, votre autorisation d’utiliser votre accès.
 Aucun appel n’est lancé en enregistrant cette configuration.
 
+Vous pouvez ajouter un champ `specialty` (160 caractères maximum) à un profil
+pour orienter ses contributions, par exemple `organisation des tâches et critères
+de vérification`. Ce texte est choisi par l'opérateur : il ne donne aucun outil ou
+droit supplémentaire à l'agent. Les avis restent à vérifier, et les profils ne
+créent pas de missions ni d'autres profils automatiquement.
+
 Exemple d’API dans `agents.json` (adaptez le modèle à votre compte) :
 
 ```json
