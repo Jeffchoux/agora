@@ -29,6 +29,17 @@ def contribution_schema():
     return schema
 
 
+def ollama_contribution_schema(expected_kind=None, decision_required=True):
+    """Keep local-model output small without relaxing contribution validation."""
+    schema = contribution_schema()
+    if expected_kind in {"question", "answer", "review"}:
+        schema["properties"]["kind"] = {"const": expected_kind, "type": "string"}
+    if not decision_required:
+        schema["properties"]["assessment"] = {"type": "null"}
+        schema.pop("$defs", None)
+    return schema
+
+
 def provider_key(config, default_env="AGORA_MODEL_KEY"):
     """Read only the selected credential from a private operator-owned file."""
     name = config.get("key_env", default_env)
@@ -64,14 +75,19 @@ def generate(config, prompt, images=()):
                     "model": config["model"],
                     "stream": False,
                     "think": False,
-                    "format": contribution_schema(),
+                    "format": ollama_contribution_schema(
+                        config.get("expected_kind"), config.get("decision_required", True)
+                    ),
                     "messages": [{"role": "user", "content": prompt}],
                     "options": {"num_predict": 512, "num_ctx": 8192},
                     "keep_alive": "1m",
                 },
             )
             response.raise_for_status()
-            text = response.json()["message"]["content"]
+            data = response.json()
+            if data.get("done_reason") == "length":
+                raise ValueError("Ollama returned a truncated contribution")
+            text = data["message"]["content"]
         elif config["provider"] == "openrouter-free":
             model = config["model"]
             if not model.endswith(":free"):

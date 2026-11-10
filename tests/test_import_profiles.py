@@ -60,6 +60,9 @@ def test_export_cannot_authorize_external(files, authorized):
     {"new": profile(endpoint="https://user:secret@example.com")},
     {"new": profile(endpoint="https://example.com?key=secret")},
     {"new": profile(max_tokens=30)},
+    {"new": profile(specialty=" ")},
+    {"new": profile(specialty="x" * 161)},
+    {"new": profile(specialty=42)},
     {"new": profile(provider="unknown")},
     {"new": profile(provider="claude-cli", operator_authorized="yes")},
     {"invalid id": profile()}, {"new": "invalid"},
@@ -161,3 +164,10 @@ def test_cli_import(files):
     assert result.returncode == 0, result.stderr
     assert "Imported 1" in result.stdout
     assert set(json.loads(target.read_text())) == {"existing", "new"}
+
+
+def test_import_preserves_local_expert_specialty(files):
+    directory, target, source = files
+    source.write_text(json.dumps({"new": profile(specialty="Identify missing evidence")}))
+    assert import_agents(source, directory) == 1
+    assert json.loads(target.read_text())["new"]["specialty"] == "Identify missing evidence"

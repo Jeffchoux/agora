@@ -63,3 +63,19 @@ def test_language_change_keeps_structured_question_requirement(tmp_path, monkeyp
     missions.action(mid, "start")
     assert mission_runner.step(missions)
     assert missions.detail(mid)["turns"][0]["status"] == "failed"
+
+
+def test_operator_defined_specialty_reaches_local_agent(tmp_path, monkeypatch):
+    prompts = []
+    def model(_profile, prompt, images=()):
+        prompts.append(prompt)
+        return Contribution(kind="review", body="Evidence is missing")
+
+    monkeypatch.setattr(mission_runner, "generate", model)
+    missions = Missions(Store(tmp_path / "db.sqlite"))
+    missions.profiles["qwen-coder"] = dict(missions.profiles["qwen-coder"], specialty="Identify missing evidence")
+    mid = missions.create("Review", "Review this proposal", ["qwen-coder"], 1, 300, "expert")
+    missions.action(mid, "start")
+    assert mission_runner.step(missions)
+    assert "Your focus for this turn: Identify missing evidence." in prompts[0]
+    assert missions.detail(mid)["status"] == "finished"
